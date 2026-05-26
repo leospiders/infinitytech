@@ -241,6 +241,9 @@
     "tryAgain": "Try Again"
   },
   "common": {
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "language": "Language",
+    "spanish": "Spanish",
+    "english": "English"
   }
 }
