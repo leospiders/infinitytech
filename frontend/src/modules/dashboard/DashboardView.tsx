@@ -3,15 +3,33 @@ import { useDashboardMetrics, useSnapshots, useWeeklyReset, useEmployees } from 
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../services/api';
 import { CardSkeleton, TableSkeleton } from '../../components/ui/LoadingSkeleton';
-import { RefreshCw, Trash2 } from 'lucide-react';
+import { RefreshCw, Trash2, Globe } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '../../utils/formatDate';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n/i18n';
 
 export function DashboardView() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'SUPERADMIN' || user?.role === 'ADMIN';
   const isTech = user?.role === 'TECHNICIAN';
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  
+  // Language toggle - detect browser language on first load
+  const [currentLang, setCurrentLang] = useState(() => {
+    const saved = localStorage.getItem('i18nextLng');
+    if (saved) return saved;
+    const browserLang = navigator.language.split('-')[0];
+    return ['es', 'en'].includes(browserLang) ? browserLang : 'es';
+  });
+
+  const handleLanguageChange = () => {
+    const newLang = currentLang === 'es' ? 'en' : 'es';
+    void i18n.changeLanguage(newLang);
+    setCurrentLang(newLang);
+    localStorage.setItem('i18nextLng', newLang);
+  };
 
   // Admin: optional technician filter
   const [techFilter, setTechFilter] = useState<number | undefined>(undefined);
@@ -61,7 +79,7 @@ export function DashboardView() {
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-brand-deep">
-              {isAdmin ? 'Business Dashboard' : 'My Dashboard'}
+              {t(isAdmin ? 'dashboard.title' : 'dashboard.myTitle')}
             </h1>
             <p className="text-xs text-muted dark:text-dim">
               Welcome back, {user?.name} — {isTech ? 'Here are your stats.' : 'Today\'s overview.'}
@@ -74,7 +92,7 @@ export function DashboardView() {
               onChange={e => setTechFilter(e.target.value ? Number(e.target.value) : undefined)}
               className="neo-input text-xs w-48"
             >
-              <option value="">All Technicians</option>
+              <option value="">{t('dashboard.allTechnicians')}</option>
               {employees?.filter(e => e.role === 'TECHNICIAN').map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.name}</option>
               ))}
@@ -83,7 +101,16 @@ export function DashboardView() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => refetch()} className="neo-btn py-2 px-4 text-xs font-semibold">
-            <RefreshCw className="h-3 w-3 mr-2 animate-pulse" /> Refresh
+            <RefreshCw className="h-3 w-3 mr-2 animate-pulse" /> {t('dashboard.refresh')}
+          </button>
+          {/* Language toggle button */}
+          <button 
+            onClick={handleLanguageChange} 
+            className="neo-btn py-2 px-3 text-xs font-semibold flex items-center gap-2"
+            title={currentLang === 'es' ? t('common.english') : t('common.spanish')}
+          >
+            <Globe className="h-4 w-4" />
+            <span className="uppercase">{currentLang}</span>
           </button>
           {/* Dev-only: reset test data */}
           <button onClick={handleResetTestData} className="neo-btn py-2 px-3 text-xs font-semibold text-danger border-red-500/30">
