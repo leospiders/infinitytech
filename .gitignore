@@ -62,6 +62,10 @@ backend/.venv/
 *.njsproj
 *.sln
 
+# Local workspace metadata
+.agents/
+.atl/
+
 # Generated files
 **/dist/
 **/build/

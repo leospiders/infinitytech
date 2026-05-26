@@ -1,0 +1,515 @@
+# Infinity Technology — Modern Web POS + Technical Service Management System
+
+Develop a modern, minimal, scalable, and production-ready web-based POS and technical service management system for a business called “Infinity Technology”, focused on:
+
+* Technical service for phones, computers, and gaming consoles
+* Sales of accessories and replacement parts
+* Employee workflow management
+* Inventory and repair tracking
+
+The system must prioritize:
+
+* Speed
+* Clean architecture
+* Scalability
+* Excellent UI/UX
+* Real-world business usability
+
+---
+
+# TECHNOLOGY STACK
+
+## Frontend
+
+* React + Vite
+* TailwindCSS v4
+* Responsive UI
+* Modern dashboard design
+* Zustand for global state
+* TanStack Query for API caching and async state
+* React Hook Form + Zod
+* React Router
+
+## Backend
+
+* Python + FastAPI
+* SQLAlchemy 2.0
+* Alembic migrations
+* REST API architecture
+* Modular service-based backend
+
+## Database
+
+* SQLite initially
+* Fully prepared for future PostgreSQL migration
+
+## Authentication
+
+Use Supabase Authentication for:
+
+* Login whit google
+* Registration with google
+* Session management
+* JWT validation
+* Role-based access
+
+The backend must validate Supabase JWT tokens securely.
+
+---
+
+# SYSTEM ARCHITECTURE
+
+The architecture must be:
+
+* Clean
+* Modular
+* Scalable
+* Frontend/backend separated
+* PostgreSQL-ready
+* Future multi-branch ready
+
+Use:
+
+* Repository pattern
+* Service layer
+* DTO/schema separation
+* Reusable UI components
+* Feature/module-based structure
+
+---
+
+# UI / UX DESIGN REQUIREMENTS
+
+The interface must be:
+
+* Minimal
+* Modern
+* Neumorphism style
+* Fast
+* Professional
+* Light-theme/Dark-theme focused
+* Mobile responsive
+* Keyboard-friendly for fast POS usage
+
+Design style:
+
+* Modern dashboard aesthetic
+* Compact layouts
+* Clean spacing
+* Soft shadows
+* Smooth transitions
+* Sidebar navigation on desktop
+* Mobile menu drawer on phones/tablets
+
+Color palette inspiration:
+
+* #2F2FE4
+* #162E93
+* #1A1953
+* #080616
+
+The POS interface must feel extremely fast and fluid.
+
+---
+
+# DATABASE ID STRATEGY
+
+All entities must use:
+
+* Auto-increment integer IDs for visible business usage
+* UUIDs internally for scalability and future sync/cloud compatibility
+
+Example:
+
+* Visible sale ID: #1024
+* Internal UUID for backend architecture
+
+---
+
+# AUTHENTICATION & ROLES
+
+## Roles
+
+### ADMIN
+
+Can:
+
+* Approve employee registrations
+* Remove employees
+* View all sales and work orders
+* View employee performance
+* Manage inventory
+* Reset weekly employee statistics
+* Access analytics/dashboard
+
+### TECHNICIAN
+
+Can:
+
+* Receive jobs
+* Update diagnostics
+* Manage inventory
+* Change repair statuses
+* Transfer work orders
+* View assigned/pending jobs
+
+### CASHIER / SELLER
+
+Can:
+
+* Create sales
+* Create work orders
+* Print receipts/orders
+* View own sales summary
+
+---
+
+# EMPLOYEE WORKFLOW
+
+Each employee must have a personalized dashboard displaying:
+
+* Assigned jobs
+* Delivered jobs
+* Pending jobs
+* Weekly performance
+* Total accumulated sales
+* Total completed repairs
+
+Admin dashboard must display:
+
+* Real-time employee summaries
+* Jobs completed per employee
+* Sales totals per employee
+* Pending tasks
+* Weekly summaries
+
+Sales and repairs must remain separate metrics.
+
+Weekly reset must NOT delete historical information.
+Instead:
+
+* Create weekly snapshots/statistics.
+
+---
+
+# WORK ORDER MODULE
+
+## Fields
+
+* customer_name
+* phone_number
+* imei
+* brand
+* model
+* desperfecto
+* diagnostico
+* motivo
+* total_cost
+* amount_paid
+* balance
+* payment_method
+* payment_status
+* optional warranty
+
+## Logic
+
+Balance must auto-calculate:
+balance = total_cost - amount_paid
+
+---
+
+## Work Order Statuses
+
+Use a scalable repair workflow:
+
+* RECEIVED
+* IN_REVIEW
+* WAITING_PARTS
+* IN_PROGRESS
+* READY
+* DELIVERED
+* CANCELLED
+
+---
+
+## Transfer System
+
+Employees must be able to transfer work orders.
+
+DO NOT overwrite assignment history.
+
+Use a dedicated assignment history model/table to preserve:
+
+* Transfer history
+* Accountability
+* Metrics accuracy
+
+---
+
+# QUICK SALE POS MODULE
+
+The POS system must be optimized for speed.
+
+## Features
+
+* Fast product search
+* Keyboard-friendly navigation
+* Quick add/edit cart
+* Product quantity controls
+* Subtotal calculation
+* Discount support
+* Correct total calculations
+* Customer name/phone
+* Payment method
+* Optional warranty
+* PDF receipt generation
+* Print button
+* WhatsApp message button
+
+---
+
+# INVENTORY MODULE
+
+## Features
+
+* Product CRUD
+* Category CRUD
+* Stock management
+* Low stock alerts
+* Product filtering
+* Product search optimization
+
+---
+
+# PERFORMANCE REQUIREMENTS (VERY IMPORTANT)
+
+The inventory will contain 1000+ products.
+
+The system MUST:
+
+* Avoid loading all products into memory
+* Use optimized backend search queries
+* Use database indexing
+* Use debounced search
+* Use server-side filtering
+* Use pagination
+
+Required DB indexes:
+
+* product name
+* category
+* barcode/future fields
+
+Search behavior:
+
+* Fast
+* Real-time feeling
+* Optimized for POS workflows
+
+---
+
+# HISTORY MODULE
+
+Create a unified “Sales & Work Orders” history section.
+
+## Display
+
+* Type
+* ID
+* Customer
+* Date
+* Total
+* Status
+
+Each row must support:
+
+* Expandable detail view
+* Re-print PDF option
+* Transaction detail modal/page
+
+---
+
+# DASHBOARD
+
+## Metrics
+
+* Sales today
+* Repairs today
+* Revenue today
+* Low stock products
+* Top sold products
+* Employee activity
+
+## Revenue Rules
+
+Sales revenue:
+SUM(Sale.total)
+
+Repair revenue:
+SUM(WorkOrder.amount_paid)
+
+DO NOT use:
+SUM(WorkOrder.total_cost)
+
+---
+
+# DATE/TIME HANDLING
+
+Avoid UTC/local mismatch issues.
+
+Requirements:
+
+* Store all timestamps in UTC
+* Convert to local timezone in frontend display
+* Ensure correct daily statistics
+
+---
+
+# PDF GENERATION
+
+Generate modern/minimal PDFs.
+
+## Requirements
+
+* 1/4 Letter size
+* Include:
+
+  * Logo
+  * Date
+  * Customer
+  * Items
+  * Totals
+  * Receiving technician
+  * Warranty info
+
+## Important
+
+PDF failures MUST NEVER break transaction creation.
+
+Correct flow:
+
+1. Save transaction
+2. Commit DB
+3. Generate PDF safely
+4. Attach/store PDF path
+
+Logo rendering errors must not cause backend 500 errors.
+
+---
+
+# WHATSAPP INTEGRATION
+
+Add WhatsApp buttons for:
+
+* Work orders
+* Receipts
+
+Generate prefilled WhatsApp messages including:
+
+* Customer name
+* Order ID
+* Total
+* Status
+* Pickup/delivery information
+
+---
+
+# BACKEND REQUIREMENTS
+
+Use:
+
+* Clean architecture
+* Modular services
+* Proper exception handling
+* Centralized logging
+* Database transaction safety
+* Validation layers
+* Async endpoints when appropriate
+
+The backend must never crash due to:
+
+* PDF issues
+* Missing logos
+* Invalid optional fields
+* Empty customer fields
+
+---
+
+# FRONTEND REQUIREMENTS
+
+Use:
+
+* Reusable components
+* Loading skeletons
+* Error boundaries
+* Responsive layouts
+* Optimistic UI where useful
+* Clean form validation
+* Accessible UX
+
+---
+
+# RECOMMENDED FOLDER STRUCTURE
+
+## Frontend
+
+frontend/
+
+* src/
+
+  * modules/
+  * components/
+  * layouts/
+  * hooks/
+  * services/
+  * stores/
+  * types/
+  * utils/
+
+## Backend
+
+backend/
+
+* app/
+
+  * api/
+  * models/
+  * schemas/
+  * services/
+  * repositories/
+  * core/
+  * pdf/
+  * db/
+
+---
+
+# INITIAL DATA / SEEDS
+
+Include:
+
+* Demo categories
+* Demo products
+* Demo admin account
+* Demo employee accounts
+
+---
+
+# DEPLOYMENT
+
+The system will run on a VPS.
+
+Requirements:
+
+* Production-ready structure
+* Environment variables
+* CORS configuration
+* Static file serving
+* Secure auth handling
+* Easy PostgreSQL migration in future
+
+---
+
+# FINAL GOAL
+
+Build a professional-grade, scalable, modern, fast, and maintainable technical service + POS platform that feels premium, highly optimized, and ready for real-world business usage.
+Ask me questions if you need to, do it in stages
