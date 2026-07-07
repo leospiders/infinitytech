@@ -6,9 +6,29 @@ from sqlalchemy.orm import selectinload
 from app.db.session import get_db, _Session
 from app.core.auth import get_current_user, require_role
 from app.models.models import Employee, Sale, SaleItem, WorkOrder, Product, WeeklySnapshot
-from app.schemas.schemas import DashboardMetrics, WeeklySnapshotInDB, ReportPeriodOut, PeriodicReportOut
+from app.schemas.schemas import (
+    DashboardMetrics, WeeklySnapshotInDB, ReportPeriodOut, PeriodicReportOut,
+    WeeklyDetailReport, WeeklySaleDetail, WeeklyRepairDetail,
+)
+from app.reports.html_reporter import generate_weekly_html
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
+from fastapi.responses import HTMLResponse
+
+# Bolivia timezone (UTC-4, no DST)
+BOLIVIA_TZ = timezone(timedelta(hours=-4))
+
+
+def _now_bolivia() -> datetime:
+    """Current datetime in Bolivia timezone."""
+    return datetime.now(timezone.utc).astimezone(BOLIVIA_TZ)
+
+
+def _today_start_utc() -> datetime:
+    """Midnight today Bolivia time, converted to UTC for DB queries."""
+    bolivia_now = datetime.now(timezone.utc).astimezone(BOLIVIA_TZ)
+    bolivia_midnight = bolivia_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return bolivia_midnight.astimezone(timezone.utc)
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -41,6 +61,15 @@ async def _generate_snapshots(
         )
         emp_sales = emp_sales_res.scalar() or 0.0
 
+        emp_items_res = await db.execute(
+            select(func.sum(SaleItem.quantity))
+            .join(Sale, SaleItem.sale_id == Sale.id)
+            .filter(
+                and_(Sale.seller_id == emp.id, Sale.created_at >= period_start)
+            )
+        )
+        emp_items = emp_items_res.scalar() or 0
+
         emp_repairs_res = await db.execute(
             select(func.count(WorkOrder.id)).filter(
                 and_(
@@ -56,6 +85,7 @@ async def _generate_snapshots(
             employee_id=emp.id,
             snapshot_week=period_label,
             total_sales=emp_sales,
+            items_sold=emp_items,
             completed_repairs=emp_repairs,
             is_definitive=is_definitive,
         )
@@ -75,12 +105,15 @@ async def _generate_snapshots(
         )
         final_snapshots.append(res.scalars().first())
 
+    total_items = sum(s.items_sold for s in created_snapshots)
+
     return PeriodicReportOut(
         period_start=period_start.isoformat(),
         period_end=period_end.isoformat(),
         is_definitive=is_definitive,
         total_sales=total_sales,
         total_repairs=total_repairs,
+        total_items_sold=total_items,
         employees=final_snapshots,
     )
 
@@ -100,7 +133,7 @@ async def get_dashboard_metrics(
     current_user: Employee = Depends(get_current_user),
 ):
     now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = _today_start_utc()
 
     scope_employee_id: Optional[int] = None
     if current_user.role in ("TECH_IT", "TECH_COM"):
@@ -185,14 +218,16 @@ async def get_dashboard_metrics(
         for row in top_sold_res.all()
     ]
 
-    # 6. Sales this week (from last DEFINITIVE report or Monday)
+    # 6. Sales this week (from last DEFINITIVE report or Bolivia Monday)
     last_def_res = await db.execute(
         select(func.max(WeeklySnapshot.created_at)).filter(
             WeeklySnapshot.is_definitive == True
         )
     )
     last_definitive = last_def_res.scalar()
-    week_start = last_definitive if last_definitive else _get_week_start(now)
+    # Use Bolivia time to determine the start of the current week
+    bolivia_now = _now_bolivia()
+    week_start = last_definitive if last_definitive else _get_week_start(bolivia_now).astimezone(timezone.utc)
     last_report_str = last_definitive.isoformat() if last_definitive else None
 
     sales_week_query = select(func.sum(Sale.total)).filter(
@@ -268,6 +303,7 @@ async def partial_report(
     is_definitive=False. Use this between weeks to check progress.
     """
     now = datetime.now(timezone.utc)
+    bolivia_now = _now_bolivia()
 
     # Find last DEFINITIVE report date as period start
     last_def_res = await db.execute(
@@ -278,7 +314,7 @@ async def partial_report(
     last_definitive = last_def_res.scalar()
 
     if last_definitive is None:
-        period_start = _get_week_start(now)
+        period_start = _get_week_start(bolivia_now).astimezone(timezone.utc)
     else:
         period_start = last_definitive
 
@@ -367,3 +403,136 @@ async def list_snapshots(
         .order_by(WeeklySnapshot.created_at.desc())
     )
     return list(result.scalars().all())
+
+
+# ─── Weekly Detail Report ─────────────────────────────────────────
+
+async def _parse_period(period: str) -> tuple[datetime, datetime]:
+    """Parse period label 'YYYY-MM-DD--YYYY-MM-DD' into UTC datetime boundaries."""
+    parts = period.split("--")
+    if len(parts) != 2:
+        raise HTTPException(status_code=400, detail="Invalid period format, expected YYYY-MM-DD--YYYY-MM-DD")
+    try:
+        start_date = datetime.strptime(parts[0], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        end_date = datetime.strptime(parts[1], "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        return start_date, end_date
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format in period label")
+
+
+@router.get("/weekly-report/detail", response_model=WeeklyDetailReport)
+async def weekly_report_detail(
+    period: str = Query(..., description="Period label YYYY-MM-DD--YYYY-MM-DD"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(require_role(["ADMIN"])),
+):
+    """Returns full transactional detail for a period."""
+    start_date, end_date = await _parse_period(period)
+
+    # ── Sales detail ──
+    sales_query = (
+        select(
+            Product.name.label("product_name"),
+            SaleItem.quantity,
+            SaleItem.unit_price,
+            Sale.total,
+            Sale.created_at,
+            Employee.name.label("seller_name"),
+        )
+        .join(SaleItem, SaleItem.sale_id == Sale.id)
+        .join(Product, Product.id == SaleItem.product_id)
+        .join(Employee, Employee.id == Sale.seller_id)
+        .filter(Sale.created_at.between(start_date, end_date))
+        .order_by(Sale.created_at.desc())
+    )
+    sales_res = await db.execute(sales_query)
+    sales_rows = sales_res.all()
+
+    sales_detail = [
+        WeeklySaleDetail(
+            product_name=row.product_name,
+            quantity=int(row.quantity),
+            price=float(row.unit_price),
+            total=float(row.total),
+            date=row.created_at.isoformat(),
+            seller_name=row.seller_name,
+        )
+        for row in sales_rows
+    ]
+
+    # ── Repairs detail ──
+    repairs_query = (
+        select(
+            func.concat(WorkOrder.brand, " ", WorkOrder.model).label("equipment"),
+            WorkOrder.imei,
+            WorkOrder.status,
+            WorkOrder.amount_paid,
+            WorkOrder.updated_at,
+            Employee.name.label("technician"),
+        )
+        .join(Employee, Employee.id == WorkOrder.assigned_technician_id)
+        .filter(
+            WorkOrder.updated_at.between(start_date, end_date),
+            WorkOrder.status == "entregado",
+        )
+        .order_by(WorkOrder.updated_at.desc())
+    )
+    repairs_res = await db.execute(repairs_query)
+    repairs_rows = repairs_res.all()
+
+    repairs_detail = [
+        WeeklyRepairDetail(
+            equipment=row.equipment,
+            imei=row.imei or "—",
+            status=row.status,
+            cost=float(row.amount_paid or 0),
+            date=row.updated_at.isoformat(),
+            technician=row.technician,
+        )
+        for row in repairs_rows
+    ]
+
+    total_sales = sum(d.total for d in sales_detail)
+    total_items = sum(d.quantity for d in sales_detail)
+    total_repairs = len(repairs_detail)
+    total_repairs_revenue = sum(r.cost for r in repairs_detail)
+
+    return WeeklyDetailReport(
+        period=period,
+        generated_at=_now_bolivia().isoformat(),
+        total_sales=total_sales,
+        total_items=total_items,
+        total_repairs=total_repairs,
+        total_repairs_revenue=total_repairs_revenue,
+        sales=sales_detail,
+        repairs=repairs_detail,
+    )
+
+
+@router.get("/weekly-report/html", response_class=HTMLResponse)
+async def weekly_report_html(
+    period: str = Query(..., description="Period label YYYY-MM-DD--YYYY-MM-DD"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(require_role(["ADMIN"])),
+):
+    """Generates and downloads an auto-contained HTML report for a period."""
+    detail = await weekly_report_detail(period, db, current_user)
+
+    html = generate_weekly_html(
+        period=detail.period,
+        generated_at=detail.generated_at,
+        total_sales=detail.total_sales,
+        total_items=detail.total_items,
+        total_repairs=detail.total_repairs,
+        total_repairs_revenue=detail.total_repairs_revenue,
+        sales=[s.model_dump() for s in detail.sales],
+        repairs=[r.model_dump() for r in detail.repairs],
+    )
+
+    filename = f"reporte-semanal-{period.replace('--', '-')}.html"
+    return HTMLResponse(
+        content=html,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )

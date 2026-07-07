@@ -11,8 +11,6 @@ import { HistoryView } from './modules/history/HistoryView';
 import { UsersView } from './modules/users/UsersView';
 import { ProfileView } from './modules/profile/ProfileView';
 import { LandingView } from './modules/landing/LandingView';
-import { StockView } from './modules/stock/StockView';
-import { MyOrdersView } from './modules/stock/MyOrdersView';
 import { LoginModal } from './components/ui/LoginModal';
 import { Toast, type ToastData } from './components/ui/Toast';
 import { MaterialIcon } from './components/ui/MaterialIcon';
@@ -99,7 +97,7 @@ export function App() {
   // DASHBOARD (authenticated) — wrapped in ProtectedRoute for status gating
   return (
     <ProtectedRoute>
-      <div className="flex h-dvh overflow-hidden transition-colors duration-300">
+      <div className="flex h-[100dvh] overflow-hidden transition-colors duration-300">
         <Toast toast={toast} onClose={() => setToast(null)} />
 
         <Sidebar
@@ -118,8 +116,6 @@ export function App() {
           {activeTab === 'history' && <HistoryView />}
           {activeTab === 'users' && (user?.role === 'ADMIN') && <UsersView showToast={showToast} />}
           {activeTab === 'profile' && <ProfileView showToast={showToast} />}
-          {activeTab === 'stock' && <StockView />}
-          {activeTab === 'my-orders' && <MyOrdersView />}
         </main>
       </div>
     </ProtectedRoute>

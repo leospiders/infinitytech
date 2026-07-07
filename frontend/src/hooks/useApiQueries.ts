@@ -43,14 +43,6 @@ export function useDashboardMetrics(technicianId?: number) {
   });
 }
 
-export function useSnapshots() {
-  return useQuery({
-    queryKey: ['snapshots'],
-    queryFn: api.getSnapshots,
-    staleTime: 300_000,
-  });
-}
-
 export function useEmployees(activeOnly = false) {
   return useQuery({
     queryKey: ['employees', activeOnly],
@@ -196,52 +188,11 @@ export function useDeleteProduct() {
   });
 }
 
-export function usePartialReport() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: api.triggerPartialReport,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reportPeriods'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); },
-  });
-}
-
 export function useReportPeriods() {
   return useQuery({
     queryKey: ['reportPeriods'],
     queryFn: api.getReportPeriods,
     staleTime: 30_000,
-  });
-}
-
-export function useReport(period: string | null) {
-  return useQuery({
-    queryKey: ['report', period],
-    queryFn: () => api.getReport(period!),
-    enabled: !!period,
-    staleTime: 60_000,
-  });
-}
-
-export function useRepuestoStock(search = '') {
-  return useQuery({
-    queryKey: ['repuestoStock', search],
-    queryFn: () => api.getRepuestoStock(search),
-    staleTime: 15_000,
-  });
-}
-
-export function useMyWorkOrders(search = '', status = '', page = 1) {
-  return useQuery({
-    queryKey: ['myWorkOrders', search, status, page],
-    queryFn: () => api.getMyWorkOrders(search, status, page),
-    staleTime: 10_000,
-  });
-}
-
-export function usePublicProducts(search = '', limit = 50) {
-  return useQuery({
-    queryKey: ['publicProducts', search, limit],
-    queryFn: () => api.getPublicProducts(limit, search),
-    staleTime: 60_000,
   });
 }
 
@@ -251,22 +202,6 @@ export function usePublicInventorySearch(q: string, limit = 20) {
     queryFn: () => api.getPublicInventorySearch(q, limit),
     staleTime: 30_000,
     enabled: true,
-  });
-}
-
-export function usePublicCategories() {
-  return useQuery({
-    queryKey: ['publicCategories'],
-    queryFn: () => api.getPublicCategories(),
-    staleTime: 60_000,
-  });
-}
-
-export function useCreateCategory() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: { name: string; description?: string }) => api.createCategory(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); },
   });
 }
 

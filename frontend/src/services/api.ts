@@ -1,8 +1,8 @@
 import { useAuthStore } from '../stores/authStore';
 import type {
   PaginatedResponse, Category, Product, WorkOrder,
-  Sale, DashboardMetrics, WeeklySnapshot, PeriodicReportOut, ReportPeriodOut, HistoryItem, EmployeeProfile,
-  RepuestoStockItem, PublicProduct, PublicInventoryResult,
+  Sale, DashboardMetrics, ReportPeriodOut, HistoryItem, EmployeeProfile,
+  PublicInventoryResult,
 } from '../types';
 
 export function getApiBaseUrl(): string {
@@ -51,35 +51,6 @@ export const api = {
       body: reason ? JSON.stringify({ reason }) : undefined,
     }),
 
-  // Repuesto stock (TECH_COM, TECH_IT)
-  getRepuestoStock: (search = '') =>
-    apiFetch<RepuestoStockItem[]>(`/products/repuesto-stock?search=${encodeURIComponent(search)}`),
-
-  // My work orders (TECH_COM)
-  getMyWorkOrders: (search = '', status = '', page = 1) => {
-    const params = new URLSearchParams({ search, status, page: String(page), limit: '20' });
-    return apiFetch<PaginatedResponse<WorkOrder>>(`/work-orders/my?${params}`);
-  },
-
-  // Public products (no auth)
-  getPublicProducts: (limit = 50, search = '', type?: string) => {
-    const params = new URLSearchParams({ limit: String(limit) });
-    if (search) params.set('search', search);
-    if (type) params.set('type', type);
-    return fetch(`${getApiBaseUrl()}/public/products?${params}`).then(r => {
-      if (!r.ok) throw new Error('Failed to load products');
-      return r.json() as Promise<PublicProduct[]>;
-    });
-  },
-
-  // Public categories (no auth)
-  getPublicCategories: () => {
-    return fetch(`${getApiBaseUrl()}/public/categories`).then(r => {
-      if (!r.ok) throw new Error('Failed to load categories');
-      return r.json() as Promise<{ id: number; name: string; description: string | null; product_count: number }[]>;
-    });
-  },
-
   // Public inventory search (no auth)
   getPublicInventorySearch: (q: string, limit = 20) => {
     const params = new URLSearchParams({ limit: String(limit) });
@@ -92,8 +63,6 @@ export const api = {
 
   // Categories
   getCategories: () => apiFetch<Category[]>('/categories/'),
-  createCategory: (data: { name: string; description?: string }) =>
-    apiFetch<Category>('/categories/', { method: 'POST', body: JSON.stringify(data) }),
 
   // Products
   getProducts: (search = '', categoryId?: number, page = 1, limit = 20) => {
@@ -205,14 +174,8 @@ export const api = {
     const params = technicianId ? `?technician_id=${technicianId}` : '';
     return apiFetch<DashboardMetrics>(`/dashboard/${params}`);
   },
-  getSnapshots: () =>
-    apiFetch<WeeklySnapshot[]>('/dashboard/snapshots'),
-  triggerPartialReport: () =>
-    apiFetch<PeriodicReportOut>('/dashboard/partial-report', { method: 'POST' }),
   getReportPeriods: () =>
     apiFetch<ReportPeriodOut[]>('/dashboard/report-periods'),
-  getReport: (period: string) =>
-    apiFetch<PeriodicReportOut>(`/dashboard/report?period=${encodeURIComponent(period)}`),
 
   // History
   getHistory: (search = '', typeFilter = '', page = 1, limit = 20) => {
@@ -220,5 +183,24 @@ export const api = {
     return apiFetch<PaginatedResponse<HistoryItem>>(`/history/?${params}`);
   },
 };
+
+export async function downloadWeeklyReportHtml(period: string) {
+  const token = useAuthStore.getState().token;
+  const response = await fetch(
+    `${BASE_URL}/dashboard/weekly-report/html?period=${encodeURIComponent(period)}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!response.ok) throw new Error('Failed to download report');
+  const html = await response.text();
+  const blob = new Blob([html], { type: 'text/html' });
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = `reporte-semanal-${period}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
+}
 
 

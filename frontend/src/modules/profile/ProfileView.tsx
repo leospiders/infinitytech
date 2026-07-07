@@ -10,7 +10,7 @@ export function ProfileView({ showToast }: { showToast: (type: 'success' | 'erro
 
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +34,17 @@ export function ProfileView({ showToast }: { showToast: (type: 'success' | 'erro
     <div className="flex flex-col gap-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="border-b border-outline-variant/10 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-on-surface">{t('profile.title')}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-on-surface">{t('profile.title')}</h1>
+          <button
+            onClick={() => i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es')}
+            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 hover:opacity-70"
+            style={{ color: 'var(--c-text-sec)', border: '1px solid var(--c-border)' }}
+          >
+            {t(i18n.language.startsWith('es') ? 'spanish' : 'english')}
+            <MaterialIcon icon="swap_horiz" size={12} wght={400} />
+          </button>
+        </div>
         <p className="text-xs text-on-surface-variant mt-1">
           {t('profile.subtitle')}
         </p>
