@@ -260,6 +260,10 @@
    BASE LAYER
    ============================================ */
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background-color: var(--color-background);

@@ -18,7 +18,7 @@ interface Props {
   onRequestRepair: () => void;
 }
 
-export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
+export function HeroPrincipal({ onExplore }: Props) {
   return (
     <section
       className="relative min-h-screen lg:h-screen w-full overflow-hidden flex items-center pt-28 pb-36 lg:pb-32"

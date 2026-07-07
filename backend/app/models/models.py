@@ -190,6 +190,7 @@ class WeeklySnapshot(Base):
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
     snapshot_week = Column(String(10), nullable=False)
     total_sales = Column(Float, default=0.0, nullable=False)
+    items_sold = Column(Integer, default=0, nullable=False)
     completed_repairs = Column(Integer, default=0, nullable=False)
     is_definitive = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

@@ -184,6 +184,7 @@ export interface WeeklySnapshot {
   employee_id: number;
   snapshot_week: string;
   total_sales: number;
+  items_sold: number;
   completed_repairs: number;
   is_definitive: boolean;
   created_at: string;
@@ -196,6 +197,7 @@ export interface PeriodicReportOut {
   is_definitive: boolean;
   total_sales: number;
   total_repairs: number;
+  total_items_sold: number;
   employees: WeeklySnapshot[];
 }
 
@@ -206,6 +208,35 @@ export interface ReportPeriodOut {
   total_sales: number;
   total_repairs: number;
   employee_count: number;
+}
+
+export interface WeeklySaleDetail {
+  product_name: string;
+  quantity: number;
+  price: number;
+  total: number;
+  date: string;
+  seller_name: string;
+}
+
+export interface WeeklyRepairDetail {
+  equipment: string;
+  imei: string;
+  status: string;
+  cost: number;
+  technician: string;
+  date: string;
+}
+
+export interface WeeklyDetailReport {
+  period: string;
+  generated_at: string;
+  total_sales: number;
+  total_items: number;
+  total_repairs: number;
+  total_repairs_revenue: number;
+  sales: WeeklySaleDetail[];
+  repairs: WeeklyRepairDetail[];
 }
 
 export interface HistoryItem {

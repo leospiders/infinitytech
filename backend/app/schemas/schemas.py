@@ -289,6 +289,7 @@ class WeeklySnapshotInDB(BaseModel):
     employee_id: int
     snapshot_week: str
     total_sales: float
+    items_sold: int = 0
     completed_repairs: int
     is_definitive: bool = False
     created_at: datetime
@@ -316,6 +317,7 @@ class PeriodicReportOut(BaseModel):
     is_definitive: bool = False
     total_sales: float
     total_repairs: int
+    total_items_sold: int = 0
     employees: List[WeeklySnapshotInDB]
 
 class ReportPeriodOut(BaseModel):
@@ -326,3 +328,29 @@ class ReportPeriodOut(BaseModel):
     total_sales: float
     total_repairs: int
     employee_count: int
+
+class WeeklySaleDetail(BaseModel):
+    product_name: str
+    quantity: int
+    price: float
+    total: float
+    date: str
+    seller_name: str
+
+class WeeklyRepairDetail(BaseModel):
+    equipment: str
+    imei: str
+    status: str
+    cost: float
+    technician: str
+    date: str
+
+class WeeklyDetailReport(BaseModel):
+    period: str
+    generated_at: str
+    total_sales: float
+    total_items: int
+    total_repairs: int
+    total_repairs_revenue: float
+    sales: List[WeeklySaleDetail]
+    repairs: List[WeeklyRepairDetail]
