@@ -288,7 +288,7 @@ export const api = {
     type: "sale" | "work-order",
     id: number,
     label: string,
-    clientPhone: string,
+    clientPhone = "",
   ) => {
     try {
       await downloadPdfBlob(type, id);
@@ -297,12 +297,12 @@ export const api = {
       return; // don't open WhatsApp if we couldn't even get the file
     }
 
-    const phone = normalizePhone(clientPhone);
     const text = encodeURIComponent(
       `${label}\nTe compartimos tu comprobante en PDF. Adjuntalo desde tu carpeta de Descargas 📎`,
     );
+    const phone = clientPhone ? `phone=${normalizePhone(clientPhone)}&` : "";
     window.open(
-      `https://api.whatsapp.com/send?phone=${phone}&text=${text}`,
+      `https://api.whatsapp.com/send?${phone}text=${text}`,
       "_blank",
     );
   },
