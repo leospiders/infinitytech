@@ -1,11 +1,16 @@
 import { motion } from 'framer-motion';
-import { MarqueeTicker } from './MarqueeTicker';
 
 const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 40 },
+  initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] },
+  transition: { duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] as const },
 });
+
+const scaleBackground = {
+  initial: { scale: 1.05, opacity: 0 },
+  animate: { scale: 1, opacity: 1 },
+  transition: { duration: 2.2, ease: [0.16, 1, 0.3, 1] as const },
+};
 
 interface Props {
   onExplore: () => void;
@@ -14,65 +19,74 @@ interface Props {
 
 export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
   return (
-    <section className="relative h-screen w-full overflow-hidden">
-      {/* Background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center scale-105"
+    <section
+      className="relative min-h-screen lg:h-screen w-full overflow-hidden flex items-center pt-28 pb-36 lg:pb-32"
+      style={{ backgroundColor: 'var(--c-bg)' }}
+    >
+      {/* Background Image - Lab is visible, slow reveal zoom */}
+      <motion.div
+        initial="initial"
+        animate="animate"
+        variants={scaleBackground}
+        className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/hero_technician.jpg')" }}
       />
 
-      {/* Dark overlay with gradient — darker at bottom */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#080616]/70 via-[#080616]/50 to-[#080616]/90" />
+      {/* Black Overlay of ~58% opacity to maintain text readability while showing lab */}
+      <div className="absolute inset-0 bg-black/58 pointer-events-none" />
 
-      {/* Subtle blue glow top-right */}
-      <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full opacity-[0.08] blur-[120px] pointer-events-none"
-        style={{ backgroundColor: '#2F2FE4' }}
+      {/* Ambient dark blue overlay for depth and color consistency */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[var(--c-bg)] via-transparent to-[var(--c-bg)]/30 pointer-events-none" />
+
+      {/* Radial soft blue glow behind H1 to pop text from the background */}
+      <div
+        className="absolute left-1/4 top-1/2 -translate-y-1/2 -translate-x-1/2 w-[550px] h-[550px] rounded-full opacity-[0.22] blur-[130px] pointer-events-none select-none"
+        style={{
+          background: 'radial-gradient(circle, var(--c-primary) 0%, transparent 70%)',
+        }}
       />
 
-      {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-12 lg:px-16 max-w-[1440px] mx-auto">
-        <div className="max-w-2xl">
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 grid grid-cols-1 lg:grid-cols-12 gap-8 pt-12">
+        {/* Left: Text Block & CTAs */}
+        <div className="lg:col-span-8 flex flex-col justify-center">
           {/* Badge */}
           <motion.div
             {...fadeUp(0)}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] mb-6"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-[0.25em] uppercase mb-8 w-fit"
             style={{
-              backgroundColor: 'rgba(47,47,228,0.12)',
-              border: '1px solid rgba(47,47,228,0.2)',
-              color: '#00C8F8',
+              backgroundColor: 'rgba(0, 200, 248, 0.08)',
+              border: '1px solid rgba(0, 200, 248, 0.25)',
+              color: 'var(--color-cyan-accent)',
+              fontFamily: '"Space Grotesk", sans-serif',
             }}
           >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#00C8F8' }} />
-            SERVICIO TÉCNICO PREMIUM
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan-accent)] animate-pulse" />
+            LABORATORIO DE PRECISIÓN
           </motion.div>
 
-          {/* Title — multi-line editorial */}
+          {/* H1 - Balanced title with gradient text using dashboard variables */}
           <motion.h1
-            {...fadeUp(0.15)}
-            className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold tracking-[-0.03em] leading-[0.92]"
-            style={{ fontFamily: '"Space Grotesk", sans-serif', color: '#FFFFFF' }}
+            {...fadeUp(0.12)}
+            className="text-5xl sm:text-6xl md:text-7xl xl:text-8xl font-black tracking-[-0.04em] leading-[0.82] select-none text-left"
+            style={{ fontFamily: '"Space Grotesk", sans-serif', color: 'var(--c-text)' }}
           >
-            {'REPAIR'.split('').map((letter, i) => (
-              <span
-                key={i}
-                className="inline-block"
-                style={{
-                  background: i >= 3 ? 'linear-gradient(135deg, #2F2FE4 0%, #00C8F8 100%)' : 'none',
-                  WebkitBackgroundClip: i >= 3 ? 'text' : 'none',
-                  WebkitTextFillColor: i >= 3 ? 'transparent' : 'none',
-                  backgroundClip: i >= 3 ? 'text' : 'none',
-                }}
-              >
-                {letter}
-              </span>
-            ))}
-            <br />
-            <span className="text-white">WITHOUT</span>
-            <br />
+            <span className="block">REPAIR</span>
             <span
-              className="inline-block"
+              className="block"
               style={{
-                background: 'linear-gradient(135deg, #2F2FE4 0%, #00C8F8 100%)',
+                background: 'linear-gradient(135deg, var(--c-text) 30%, var(--c-text-sec) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              WITHOUT
+            </span>
+            <span
+              className="block"
+              style={{
+                background: 'linear-gradient(135deg, var(--c-primary) 0%, var(--color-cyan-accent) 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -82,51 +96,81 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
             </span>
           </motion.h1>
 
-          {/* Subtitle */}
+          {/* Subtitle/Description - Max 60-70 characters per line */}
           <motion.p
-            {...fadeUp(0.3)}
-            className="text-sm sm:text-base mt-6 max-w-md leading-relaxed"
-            style={{ color: '#A5A5A5' }}
+            {...fadeUp(0.24)}
+            className="text-base sm:text-lg mt-12 max-w-[520px] leading-relaxed font-light text-left"
+            style={{
+              color: 'var(--c-text-sec)',
+              fontFamily: '"Space Grotesk", sans-serif',
+            }}
           >
-            Repuestos originales, reparación de precisión y tecnología premium para tus dispositivos. Más de 10 años devolviéndole la vida a tu equipo.
+            Soporte técnico de alta gama y componentes de grado original. Experimente una precisión inquebrantable y un servicio exclusivo para restaurar su ecosistema tecnológico.
           </motion.p>
 
-          {/* Buttons */}
+          {/* CTA Buttons - Using dashboard theme variables with glows */}
           <motion.div
-            {...fadeUp(0.45)}
-            className="flex items-center gap-4 mt-10"
+            {...fadeUp(0.36)}
+            className="flex flex-wrap items-center gap-4 mt-12"
           >
+            {/* Primary Button */}
             <button
               onClick={onExplore}
-              className="px-8 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300"
+              className="h-14 px-10 rounded-[20px] text-xs font-bold uppercase tracking-wider cursor-pointer shadow-[0_0_24px_rgba(0,217,255,0.15)]"
               style={{
-                backgroundColor: '#2F2FE4',
-                color: '#FFFFFF',
+                backgroundColor: 'var(--c-primary)',
+                color: 'var(--c-bg)',
+                border: 'none',
+                fontFamily: '"Space Grotesk", sans-serif',
+                transition: 'all 250ms cubic-bezier(0.16, 1, 0.3, 1)',
               }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#3B3BF0'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(47,47,228,0.3)'; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#2F2FE4'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+              onMouseEnter={e => {
+                e.currentTarget.style.filter = 'brightness(1.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 217, 255, 0.35)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.filter = 'none';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 0 24px rgba(0,217,255,0.15)';
+              }}
             >
               Explorar inventario
             </button>
+
+            {/* Secondary Button */}
             <button
               onClick={onRequestRepair}
-              className="px-8 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300"
+              className="h-14 px-10 rounded-[20px] text-xs font-bold uppercase tracking-wider cursor-pointer"
               style={{
                 backgroundColor: 'transparent',
-                color: '#EAEAEA',
-                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'var(--c-text)',
+                border: '1px solid var(--c-border)',
+                fontFamily: '"Space Grotesk", sans-serif',
+                transition: 'all 250ms cubic-bezier(0.16, 1, 0.3, 1)',
               }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'var(--c-border)';
+                e.currentTarget.style.color = 'var(--c-text)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 217, 255, 0.08)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--c-text)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               Solicitar reparación
             </button>
           </motion.div>
         </div>
+
+        {/* Right: Left Empty for Breathing Space */}
+        <div className="hidden lg:col-span-4 lg:block h-full" />
       </div>
 
-      {/* Infinite ticker at bottom */}
-      <MarqueeTicker />
     </section>
   );
 }

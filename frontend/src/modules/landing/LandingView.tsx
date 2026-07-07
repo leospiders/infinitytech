@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCartStore } from '../../stores/cartStore';
 import { HeroPrincipal } from './HeroPrincipal';
+import { MarqueeTicker } from './MarqueeTicker';
 import { CategoriesSection } from './CategoriesSection';
 import { InventorySection } from './InventorySection';
 import { ServicesSection } from './ServicesSection';
@@ -27,7 +28,10 @@ export function LandingView({ onRequestLogin }: Props) {
   }, []);
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
     setMenuOpen(false);
   };
 
@@ -35,108 +39,186 @@ export function LandingView({ onRequestLogin }: Props) {
     { id: 'inicio', label: 'Inicio' },
     { id: 'inventario', label: 'Inventario' },
     { id: 'servicios', label: 'Servicios' },
+    { id: 'taller', label: 'Taller' },
     { id: 'nosotros', label: 'Nosotros' },
     { id: 'contacto', label: 'Contacto' },
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#080616', color: '#FFFFFF' }}>
-      {/* ─── Navbar ─── */}
+    <div
+      className="min-h-screen selection:bg-[var(--c-primary)]/30 selection:text-[var(--c-text)]"
+      style={{
+        backgroundColor: 'var(--c-bg)',
+        color: 'var(--c-text)',
+        fontFamily: '"Space Grotesk", sans-serif',
+      }}
+    >
+      {/* ─── Navbar (Fixed height of 76px) ─── */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled ? 'shadow-[0_1px_0_rgba(255,255,255,0.04)]' : ''
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b h-[76px] flex items-center ${
+          scrolled ? 'border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)]' : 'border-transparent'
         }`}
         style={{
-          backgroundColor: scrolled ? 'rgba(8,6,22,0.85)' : 'transparent',
+          backgroundColor: scrolled ? 'var(--c-navbar-bg)' : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
         }}
       >
-        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <button onClick={() => scrollTo('inicio')} className="flex items-center gap-2.5 cursor-pointer">
-              <div className="h-8 w-8 rounded-xl flex items-center justify-center text-sm font-bold"
-                style={{ backgroundColor: '#2F2FE4', color: '#FFFFFF' }}>
-                ∞
-              </div>
-              <span className="text-xs font-bold tracking-[0.15em] uppercase" style={{ color: '#FFFFFF', fontFamily: '"Space Grotesk", sans-serif' }}>
-                INFINITY <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 300 }}>TECH</span>
-              </span>
+        <div className="max-w-[1440px] w-full mx-auto px-6 sm:px-12 lg:px-16 flex items-center justify-between">
+          {/* Logo - Reduced visual weight & width */}
+          <button
+            onClick={() => scrollTo('inicio')}
+            className="flex items-center gap-2.5 cursor-pointer group h-10"
+          >
+            <div
+              className="h-7 w-7 rounded-xl flex items-center justify-center text-sm font-black transition-all duration-300 group-hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, var(--c-primary) 0%, var(--color-cyan-accent) 100%)',
+                color: 'var(--c-bg)',
+              }}
+            >
+              ∞
+            </div>
+            <span
+              className="text-[10px] font-bold tracking-[0.25em] uppercase transition-colors duration-300"
+              style={{ color: 'var(--c-text-sec)' }}
+            >
+              INFINITY <span style={{ color: 'var(--c-text-sec)', opacity: 0.5, fontWeight: 300 }}>TECH</span>
+            </span>
+          </button>
+
+          {/* Desktop Nav - Generous spacing (gap-6) and glowing underline hover */}
+          <nav className="hidden lg:flex items-center gap-6 h-10">
+            {navItems.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => scrollTo(id)}
+                className="relative py-1.5 px-0.5 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors duration-300 cursor-pointer group"
+                style={{ color: 'var(--c-text-sec)' }}
+              >
+                <span className="group-hover:text-white transition-colors duration-300">{label}</span>
+                <span
+                  className="absolute bottom-0 left-0 w-0 h-[2px] bg-[var(--color-cyan-accent)] transition-all duration-300 group-hover:w-full rounded-full"
+                  style={{ boxShadow: '0 0 8px var(--color-cyan-accent)' }}
+                />
+              </button>
+            ))}
+          </nav>
+
+          {/* Right Actions - Balanced icon buttons with exact same dimensions and padding */}
+          <div className="flex items-center gap-1.5 h-10">
+            {/* Search Button */}
+            <button
+              onClick={() => scrollTo('inventario')}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 cursor-pointer group"
+              style={{ color: 'var(--c-text-sec)' }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                e.currentTarget.style.color = 'var(--color-cyan-accent)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--c-text-sec)';
+              }}
+              aria-label="Buscar en inventario"
+            >
+              <MaterialIcon icon="search" size={16} wght={300} />
             </button>
 
-            {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => scrollTo(id)}
-                  className="px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer"
-                  style={{ color: 'rgba(255,255,255,0.5)' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#FFFFFF'; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}
+            {/* Cart Button */}
+            <button
+              onClick={() => setCartOpen(true)}
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 cursor-pointer group"
+              style={{ color: 'var(--c-text-sec)' }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                e.currentTarget.style.color = 'var(--color-cyan-accent)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--c-text-sec)';
+              }}
+              aria-label="Ver carrito"
+            >
+              <MaterialIcon icon="shopping_cart" size={16} wght={300} />
+              {totalItems > 0 && (
+                <span
+                  className="absolute top-1 right-1 h-3.5 min-w-[14px] px-0.5 rounded-full text-[8px] font-bold flex items-center justify-center border border-[var(--c-bg)]"
+                  style={{
+                    backgroundColor: 'var(--c-primary)',
+                    color: 'var(--c-bg)',
+                  }}
                 >
-                  {label}
-                </button>
-              ))}
-            </nav>
+                  {totalItems > 9 ? '9+' : totalItems}
+                </span>
+              )}
+            </button>
 
-            {/* Right actions */}
-            <div className="flex items-center gap-2">
-              <button className="hidden sm:flex p-2.5 rounded-xl transition-all duration-200 cursor-pointer"
-                style={{ color: 'rgba(255,255,255,0.4)' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#00C8F8'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}>
-                <MaterialIcon icon="search" size={18} wght={300} />
-              </button>
-              <button onClick={() => setCartOpen(true)}
-                className="relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer"
-                style={{ color: 'rgba(255,255,255,0.4)' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#00C8F8'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}>
-                <MaterialIcon icon="shopping_cart" size={18} wght={300} />
-                {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full text-[8px] font-bold flex items-center justify-center"
-                    style={{ backgroundColor: '#2F2FE4', color: '#FFFFFF' }}>
-                    {totalItems > 9 ? '9+' : totalItems}
-                  </span>
-                )}
-              </button>
-              <button onClick={onRequestLogin}
-                className="hidden sm:flex p-2.5 rounded-xl transition-all duration-200 cursor-pointer"
-                style={{ color: 'rgba(255,255,255,0.4)' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#00C8F8'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}>
-                <MaterialIcon icon="person" size={18} wght={300} />
-              </button>
-              <div className="w-px h-5 mx-1" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
-              {/* Dark mode toggle placeholder */}
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                <MaterialIcon icon="dark_mode" size={14} wght={200} />
-              </div>
+            {/* Account Button */}
+            <button
+              onClick={onRequestLogin}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 cursor-pointer group"
+              style={{ color: 'var(--c-text-sec)' }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                e.currentTarget.style.color = 'var(--color-cyan-accent)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--c-text-sec)';
+              }}
+              aria-label="Acceso personal"
+            >
+              <MaterialIcon icon="person" size={16} wght={300} />
+            </button>
 
-              {/* Mobile hamburger */}
-              <button onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2.5 rounded-xl transition-all duration-200 cursor-pointer md:hidden"
-                style={{ color: 'rgba(255,255,255,0.4)' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                <MaterialIcon icon={menuOpen ? 'close' : 'menu'} size={18} wght={300} />
-              </button>
+            <div className="w-px h-4 mx-0.5 bg-white/10 hidden sm:block" />
+
+            {/* Official Dark Mode indicator (cyan accent) */}
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[var(--color-cyan-accent)]" title="Modo Oscuro Oficial">
+              <MaterialIcon icon="dark_mode" size={14} wght={300} />
             </div>
+
+            {/* Mobile Hamburger menu */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 cursor-pointer lg:hidden"
+              style={{ color: 'var(--c-text-sec)' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+            >
+              <MaterialIcon icon={menuOpen ? 'close' : 'menu'} size={16} wght={300} />
+            </button>
           </div>
         </div>
 
-        {/* Mobile drawer */}
+        {/* Mobile Drawer */}
         {menuOpen && (
-          <div className="md:hidden border-t px-6 pb-6 pt-4 flex flex-col gap-1"
-            style={{ borderColor: 'rgba(255,255,255,0.04)', backgroundColor: 'rgba(8,6,22,0.95)', backdropFilter: 'blur(20px)' }}>
+          <div
+            className="lg:hidden absolute top-[76px] left-0 right-0 border-t px-6 pb-6 pt-4 flex flex-col gap-2 shadow-[0_12px_30px_rgba(0,0,0,0.6)]"
+            style={{
+              borderColor: 'var(--c-border)',
+              backgroundColor: 'var(--c-mobile-drawer-bg)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+            }}
+          >
             {navItems.map(({ id, label }) => (
-              <button key={id} onClick={() => scrollTo(id)}
-                className="w-full text-left px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer"
-                style={{ color: 'rgba(255,255,255,0.5)' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#FFFFFF'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}>
+              <button
+                key={id}
+                onClick={() => scrollTo(id)}
+                className="w-full text-left px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-300 cursor-pointer"
+                style={{ color: 'var(--c-text-sec)' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                  e.currentTarget.style.color = 'var(--c-text)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--c-text-sec)';
+                }}
+              >
                 {label}
               </button>
             ))}
@@ -153,6 +235,8 @@ export function LandingView({ onRequestLogin }: Props) {
           />
         </div>
 
+        <MarqueeTicker />
+
         <CategoriesSection />
 
         <div id="inventario">
@@ -163,14 +247,20 @@ export function LandingView({ onRequestLogin }: Props) {
           <ServicesSection />
         </div>
 
+        <div id="taller">
+          {/* Scroll anchor */}
+        </div>
+
         <div id="nosotros">
           <StatsSection />
         </div>
 
+        <TestimonialsSection />
+
         <CTASection />
 
         <div id="contacto">
-          {/* Contact anchor for scrolling — footer acts as contact */}
+          {/* Contact anchor */}
         </div>
       </main>
 

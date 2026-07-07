@@ -4,87 +4,118 @@ import { MaterialIcon } from '../../components/ui/MaterialIcon';
 const SERVICES = [
   {
     title: 'Cambio de pantalla',
-    desc: 'Pantallas originales y de alta calidad para todas las marcas. Reparación con herramientas de precisión y garantía escrita.',
+    desc: 'Instalación de paneles de grado original y calibración cromática. Reemplazo de alta precisión con sellado contra polvo y humedad.',
     icon: 'devices',
     image: '/repairservice.webp',
     reversed: false,
   },
   {
     title: 'Cambio de batería',
-    desc: 'Baterías certificadas con control de calidad. Recuperá la autonomía original de tu equipo en 30 minutos.',
+    desc: 'Células de energía premium con control de ciclo integrado. Restauración completa de la autonomía nominal original en minutos.',
     icon: 'battery_charging_full',
-    image: '/hero_technician.jpg',
+    image: '/precision_repair.jpg',
     reversed: true,
   },
   {
     title: 'Reparación de placa',
-    desc: 'Microsoldadura de componente a nivel placa. Diagnóstico profesional con osciloscopio y estación de calor.',
+    desc: 'Micro-soldadura SMD y reconstrucción de pistas de circuitos. Diagnóstico lógico microscópico para resolver cortocircuitos complejos.',
     icon: 'memory',
     image: '/repairservice.webp',
     reversed: false,
   },
   {
-    title: 'Mantenimiento general',
-    desc: 'Limpieza profunda, cambio de pasta térmica, revisión de conectores y puesta a punto completa.',
+    title: 'Mantenimiento',
+    desc: 'Limpieza ultrasónica, optimización térmica avanzada y reemplazo de compuestos disipadores de calor.',
     icon: 'build',
     image: '/unlockservice.webp',
+    reversed: true,
+  },
+  {
+    title: 'Actualización de software',
+    desc: 'Restauración de firmware oficial, optimización de velocidad, desinfección de malware y copias de seguridad lógicas.',
+    icon: 'terminal',
+    image: '/unlockservice.webp',
+    reversed: false,
+  },
+  {
+    title: 'Recuperación de datos',
+    desc: 'Extracción forense de almacenamiento flash dañado físicamente. Técnicas avanzadas de reconstrucción lógica y clonación profunda.',
+    icon: 'settings_backup_restore',
+    image: '/gamingservice.webp',
     reversed: true,
   },
 ];
 
 const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 30 },
+  initial: { opacity: 0, y: 40 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-100px' },
-  transition: { duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] },
+  transition: { duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] as const },
 });
 
 export function ServicesSection() {
   return (
-    <section id="servicios" className="py-24 px-6 sm:px-12 lg:px-16 max-w-[1440px] mx-auto">
-      <motion.div {...fadeUp(0)} className="mb-16">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] block mb-3" style={{ color: '#2F2FE4' }}>
-          SERVICIOS
+    <section className="py-32 px-6 sm:px-12 lg:px-16 max-w-[1440px] mx-auto">
+      {/* Section Header */}
+      <motion.div {...fadeUp(0)} className="mb-24">
+        <span
+          className="text-[11px] font-semibold uppercase tracking-[0.25em] block mb-4"
+          style={{ color: 'var(--color-cyan-accent)' }}
+        >
+          SERVICIOS / LABORATORIO
         </span>
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight" style={{ fontFamily: '"Space Grotesk", sans-serif', color: '#FFFFFF' }}>
-          Reparación de precisión
+        <h2
+          className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-[-0.03em] leading-tight text-[var(--c-text)]"
+          style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+        >
+          Ingeniería de reparación.
         </h2>
       </motion.div>
 
-      <div className="flex flex-col gap-20">
+      {/* Alternating editorial blocks */}
+      <div className="flex flex-col gap-32">
         {SERVICES.map((svc, i) => (
           <motion.div
             key={svc.title}
-            {...fadeUp(0.1 + i * 0.08)}
-            className={`flex flex-col ${svc.reversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-10 lg:gap-16`}
+            {...fadeUp(0.1 + i * 0.05)}
+            className={`flex flex-col ${svc.reversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-24`}
           >
-            {/* Image */}
-            <div className="w-full lg:w-1/2 aspect-[4/3] rounded-[24px] overflow-hidden"
-              style={{ backgroundColor: '#0A0C14' }}>
+            {/* Image Box - Massive size, custom zoom hover */}
+            <div
+              className="w-full lg:w-1/2 aspect-[16/10] rounded-[28px] overflow-hidden border relative group"
+              style={{ backgroundColor: 'var(--c-bg)', borderColor: 'var(--c-border)' }}
+            >
               <div
-                className="w-full h-full bg-cover bg-center transition-all duration-700 hover:scale-105"
-                style={{ backgroundImage: `url(${svc.image})`, opacity: 0.4 }}
+                className="absolute inset-0 bg-cover bg-center scale-100 opacity-40 transition-all duration-[2000ms] ease-out group-hover:scale-105 group-hover:opacity-60"
+                style={{ backgroundImage: `url(${svc.image})` }}
               />
+              <div className="absolute inset-0 bg-gradient-to-tr from-[var(--c-bg)]/80 via-transparent to-transparent opacity-40 pointer-events-none" />
             </div>
 
-            {/* Text */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-5">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(47,47,228,0.12)' }}>
-                <MaterialIcon icon={svc.icon} size={20} style={{ color: '#00C8F8' }} />
+            {/* Content Box */}
+            <div className="w-full lg:w-1/2 flex flex-col gap-6 items-start">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center border backdrop-blur-md"
+                style={{ backgroundColor: 'var(--c-surface)', borderColor: 'var(--c-border)' }}
+              >
+                <MaterialIcon icon={svc.icon} size={20} style={{ color: 'var(--color-cyan-accent)' }} />
               </div>
-              <h3 className="text-2xl sm:text-3xl font-bold tracking-tight"
-                style={{ fontFamily: '"Space Grotesk", sans-serif', color: '#FFFFFF' }}>
+              <h3
+                className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--c-text)]"
+                style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+              >
                 {svc.title}
               </h3>
-              <p className="text-sm leading-relaxed" style={{ color: '#A5A5A5' }}>
+              <p
+                className="text-sm leading-relaxed font-light"
+                style={{ color: 'var(--c-text-sec)', fontFamily: '"Space Grotesk", sans-serif' }}
+              >
                 {svc.desc}
               </p>
-              <button className="inline-flex items-center gap-2 text-sm font-semibold transition-all duration-200 w-fit mt-2"
-                style={{ color: '#00C8F8' }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                Saber más →
+              <button
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--color-cyan-accent)] transition-colors duration-300 hover:text-[var(--c-text)] mt-2 cursor-pointer"
+              >
+                Consultar Servicio →
               </button>
             </div>
           </motion.div>

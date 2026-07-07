@@ -2,8 +2,12 @@ import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
 const ITEMS = [
-  'REPARACIÓN EXPRESS', 'REPUESTOS ORIGINALES', 'GARANTÍA',
-  'STOCK DISPONIBLE', 'ACCESORIOS', 'SERVICIO TÉCNICO',
+  'REPARACIÓN EXPRESS',
+  'REPUESTOS ORIGINALES',
+  'GARANTÍA OFICIAL',
+  'STOCK DISPONIBLE',
+  'ACCESORIOS PREMIUM',
+  'SERVICIO TÉCNICO',
 ];
 
 export function MarqueeTicker() {
@@ -15,22 +19,43 @@ export function MarqueeTicker() {
   }, []);
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 overflow-hidden border-t border-white/5">
-      <div className="py-4">
+    <div
+      className="absolute bottom-0 left-0 right-0 border-t border-b overflow-hidden z-20"
+      style={{
+        borderColor: 'var(--c-border)',
+        backgroundColor: 'var(--c-bg)',
+        opacity: 0.95,
+      }}
+    >
+      <div className="py-5">
         <motion.div
           ref={ref}
           animate={{ x: [0, -width] }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-          className="flex gap-12 whitespace-nowrap"
+          className="flex items-center gap-16 whitespace-nowrap cursor-default"
         >
           {[...ITEMS, ...ITEMS].map((item, i) => (
-            <span
+            <div
               key={i}
-              className="text-[11px] font-semibold tracking-[0.25em] uppercase"
-              style={{ color: 'rgba(255,255,255,0.25)' }}
+              className="flex items-center gap-6 group transition-all duration-300"
             >
-              {item}
-            </span>
+              <span
+                className="text-xs font-bold tracking-[0.2em] transition-all duration-300 select-none"
+                style={{
+                  color: 'var(--c-text)',
+                  fontFamily: '"Space Grotesk", sans-serif',
+                }}
+              >
+                {item}
+              </span>
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  backgroundColor: 'var(--color-cyan-accent)',
+                  boxShadow: '0 0 8px var(--color-cyan-accent)',
+                }}
+              />
+            </div>
           ))}
         </motion.div>
       </div>
