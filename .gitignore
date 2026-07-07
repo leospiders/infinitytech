@@ -19,6 +19,9 @@ build/
 *.swp
 *.swo
 
+# OpenCode config (may contain tokens)
+.opencode/
+
 # Logs
 *.log
 
@@ -88,3 +91,18 @@ yarn-error.log*
 *.tar.xz
 *.tar.zst
 ```
+    # Bases de datos locales
+    backend/*.db
+
+    # Supabase local
+    backend/supabase/
+
+    # Inicialización local
+    backend/init_db.py
+
+    # Herramientas internas
+    .agents/
+    .atl/
+    openspec/
+    static/
+    frontend/model/
