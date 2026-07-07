@@ -487,7 +487,7 @@ def _watermark(canvas, doc):
         dh = ih * scale
 
         canvas.saveState()
-        canvas.setFillAlpha(0.40)
+        canvas.setFillAlpha(0.30)
         canvas.drawImage(
             img,
             (PAGE_W - dw) / 2,

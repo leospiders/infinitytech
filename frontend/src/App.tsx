@@ -99,7 +99,7 @@ export function App() {
   // DASHBOARD (authenticated) — wrapped in ProtectedRoute for status gating
   return (
     <ProtectedRoute>
-      <div className="flex h-screen overflow-hidden transition-colors duration-300">
+      <div className="flex h-dvh overflow-hidden transition-colors duration-300">
         <Toast toast={toast} onClose={() => setToast(null)} />
 
         <Sidebar
@@ -110,7 +110,7 @@ export function App() {
           onNewRepairOrder={() => { setActiveTab('repairs'); setRepairCreateTrigger(n => n + 1); }}
         />
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 pt-16 lg:pt-8 relative">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-8 pt-16 lg:pt-8 relative">
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'pos' && <POSView showToast={showToast} />}
           {activeTab === 'repairs' && <RepairsView showToast={showToast} createTrigger={repairCreateTrigger} onConsumeTrigger={() => setRepairCreateTrigger(0)} />}
