@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
+import { MaterialIcon } from "../../components/ui/MaterialIcon";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
@@ -21,7 +22,7 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
   return (
     <section
       className="relative min-h-screen lg:h-screen w-full overflow-hidden flex items-center pt-28 pb-36 lg:pb-32"
-      style={{ backgroundColor: 'var(--c-bg)' }}
+      style={{ backgroundColor: "var(--c-bg)" }}
     >
       {/* Background Image - Lab is visible, slow reveal zoom */}
       <motion.div
@@ -42,7 +43,8 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
       <div
         className="absolute left-1/4 top-1/2 -translate-y-1/2 -translate-x-1/2 w-[550px] h-[550px] rounded-full opacity-[0.22] blur-[130px] pointer-events-none select-none"
         style={{
-          background: 'radial-gradient(circle, var(--c-primary) 0%, transparent 70%)',
+          background:
+            "radial-gradient(circle, var(--c-primary) 0%, transparent 70%)",
         }}
       />
 
@@ -54,30 +56,35 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
           <motion.h1
             {...fadeUp(0.12)}
             className="text-5xl sm:text-6xl md:text-7xl xl:text-8xl font-black tracking-[-0.04em] leading-[0.82] select-none text-left"
-            style={{ fontFamily: '"Space Grotesk", sans-serif', color: 'var(--c-text)' }}
+            style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              color: "var(--c-text)",
+            }}
           >
-            <span className="block">REPAIR</span>
+            <span className="block">REPARACIÓN</span>
             <span
               className="block"
               style={{
-                background: 'linear-gradient(135deg, var(--c-text) 30%, var(--c-text-sec) 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                background:
+                  "linear-gradient(135deg, var(--c-text) 30%, var(--c-text-sec) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
               }}
             >
-              WITHOUT
+              SIN
             </span>
             <span
               className="block"
               style={{
-                background: 'linear-gradient(135deg, var(--c-primary) 0%, var(--color-cyan-accent) 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                background:
+                  "linear-gradient(135deg, var(--c-primary) 0%, var(--color-cyan-accent) 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
               }}
             >
-              LIMITS
+              LIMITES
             </span>
           </motion.h1>
 
@@ -86,11 +93,12 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
             {...fadeUp(0.24)}
             className="text-base sm:text-lg mt-12 max-w-[520px] leading-relaxed font-light text-left"
             style={{
-              color: 'var(--c-text-sec)',
+              color: "var(--c-text-sec)",
               fontFamily: '"Space Grotesk", sans-serif',
             }}
           >
-            Soporte técnico de alta gama y componentes de grado original. Experimente una precisión inquebrantable y un servicio exclusivo para restaurar su ecosistema tecnológico.
+            Componentes originales, garantizados por escrito. Técnicos
+            certificados, precisión de fábrica, sin atajos.
           </motion.p>
 
           {/* CTA Buttons - Using dashboard theme variables with glows */}
@@ -100,54 +108,58 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
           >
             {/* Primary Button */}
             <button
-              onClick={onExplore}
-              className="h-14 px-10 rounded-[20px] text-xs font-bold uppercase tracking-wider cursor-pointer shadow-[0_0_24px_rgba(0,217,255,0.15)]"
+              onClick={onRequestRepair}
+              className="h-14 px-10 rounded-[20px] text-xs font-bold uppercase tracking-wider cursor-pointer shadow-[0_0_24px_rgba(0,217,255,0.15)] inline-flex items-center justify-center gap-3"
               style={{
-                backgroundColor: 'var(--c-primary)',
-                color: 'var(--c-bg)',
-                border: 'none',
+                backgroundColor: "var(--c-primary)",
+                color: "var(--c-bg)",
+                border: "none",
                 fontFamily: '"Space Grotesk", sans-serif',
-                transition: 'all 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: "all 250ms cubic-bezier(0.16, 1, 0.3, 1)",
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.filter = 'brightness(1.1)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 217, 255, 0.35)';
+              onMouseEnter={(e) => {
+                e.currentTarget.style.filter = "brightness(1.1)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow =
+                  "0 8px 30px rgba(0, 217, 255, 0.35)";
               }}
-              onMouseLeave={e => {
-                e.currentTarget.style.filter = 'none';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 0 24px rgba(0,217,255,0.15)';
+              onMouseLeave={(e) => {
+                e.currentTarget.style.filter = "none";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 24px rgba(0,217,255,0.15)";
               }}
             >
-              Explorar inventario
+              <MaterialIcon icon="perm_phone_msg" size={18} wght={300} />
+              Agendar reparación
             </button>
 
             {/* Secondary Button */}
             <button
-              onClick={onRequestRepair}
+              onClick={onExplore}
               className="h-14 px-10 rounded-[20px] text-xs font-bold uppercase tracking-wider cursor-pointer"
               style={{
-                backgroundColor: 'transparent',
-                color: 'var(--c-text)',
-                border: '1px solid var(--c-border)',
+                backgroundColor: "transparent",
+                color: "var(--c-text)",
+                border: "1px solid var(--c-border)",
                 fontFamily: '"Space Grotesk", sans-serif',
-                transition: 'all 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: "all 250ms cubic-bezier(0.16, 1, 0.3, 1)",
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = 'var(--c-border)';
-                e.currentTarget.style.color = 'var(--c-text)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 217, 255, 0.08)';
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--c-border)";
+                e.currentTarget.style.color = "var(--c-text)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow =
+                  "0 8px 30px rgba(0, 217, 255, 0.08)";
               }}
-              onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--c-text)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--c-text)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
-              Solicitar reparación
+              Explorar repuestos
             </button>
           </motion.div>
         </div>
@@ -155,7 +167,6 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
         {/* Right: Left Empty for Breathing Space */}
         <div className="hidden lg:col-span-4 lg:block h-full" />
       </div>
-
     </section>
   );
 }

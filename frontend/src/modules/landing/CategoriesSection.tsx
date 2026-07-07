@@ -1,24 +1,23 @@
-import { motion } from 'framer-motion';
-import { MaterialIcon } from '../../components/ui/MaterialIcon';
+import { motion } from "framer-motion";
+import { MaterialIcon } from "../../components/ui/MaterialIcon";
 
 const CATEGORIES = [
-  { name: 'Celulares', icon: 'smartphone', image: '/repairservice.webp' },
-  { name: 'Laptops', icon: 'laptop', image: '/hero_technician.jpg' },
-  { name: 'Pantallas', icon: 'tv', image: '/repairservice.webp' },
-  { name: 'Baterías', icon: 'battery_saver', image: '/precision_repair.jpg' },
-  { name: 'Accesorios', icon: 'headphones', image: '/gamingservice.webp' },
-  { name: 'Herramientas', icon: 'handyman', image: '/precision_repair.jpg' },
-  { name: 'Repuestos', icon: 'inventory_2', image: '/unlockservice.webp' },
-  { name: 'Gaming', icon: 'sports_esports', image: '/gamingservice.webp' },
+  { name: "Celulares", icon: "smartphone", image: "/repairservice.webp" },
+  { name: "Laptops", icon: "laptop", image: "/hero_technician.jpg" },
+  { name: "Pantallas", icon: "tv", image: "/repairservice.webp" },
+  { name: "Baterías", icon: "battery_saver", image: "/precision_repair.jpg" },
+  { name: "Accesorios", icon: "headphones", image: "/gamingservice.webp" },
+  { name: "Herramientas", icon: "handyman", image: "/precision_repair.jpg" },
+  { name: "Repuestos", icon: "inventory_2", image: "/unlockservice.webp" },
+  { name: "Gaming", icon: "sports_esports", image: "/gamingservice.webp" },
 ];
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 40 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-80px' },
+  viewport: { once: true, margin: "-80px" },
   transition: { duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] as const },
 });
-
 export function CategoriesSection() {
   return (
     <section className="py-32 px-6 sm:px-12 lg:px-16 max-w-[1440px] mx-auto">
@@ -26,13 +25,16 @@ export function CategoriesSection() {
       <motion.div {...fadeUp(0)} className="mb-20">
         <span
           className="text-[11px] font-semibold uppercase tracking-[0.25em] block mb-4"
-          style={{ color: 'var(--color-cyan-accent)' }}
+          style={{ color: "var(--color-cyan-accent)" }}
         >
           COLECCIÓN / CATEGORÍAS
         </span>
         <h2
           className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-[-0.03em] leading-none"
-          style={{ fontFamily: '"Space Grotesk", sans-serif', color: 'var(--c-text)' }}
+          style={{
+            fontFamily: '"Space Grotesk", sans-serif',
+            color: "var(--c-text)",
+          }}
         >
           Hardware curado.
         </h2>
@@ -46,8 +48,8 @@ export function CategoriesSection() {
             {...fadeUp(0.05 + i * 0.05)}
             className="group relative rounded-[28px] overflow-hidden cursor-pointer aspect-[4/5] border"
             style={{
-              backgroundColor: 'var(--c-surface)',
-              borderColor: 'var(--c-border)',
+              backgroundColor: "var(--c-surface)",
+              borderColor: "var(--c-border)",
             }}
           >
             {/* Background Image with elegant slide/zoom on hover */}
@@ -62,7 +64,8 @@ export function CategoriesSection() {
             <div
               className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
               style={{
-                background: 'linear-gradient(180deg, rgba(0, 229, 255, 0.08) 0%, transparent 60%)',
+                background:
+                  "linear-gradient(180deg, rgba(0, 229, 255, 0.08) 0%, transparent 60%)",
               }}
             />
 
@@ -74,11 +77,15 @@ export function CategoriesSection() {
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center border backdrop-blur-md transition-all duration-300 group-hover:border-[var(--color-cyan-accent)]/30 group-hover:scale-105"
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                  borderColor: 'var(--c-border)',
+                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  borderColor: "var(--c-border)",
                 }}
               >
-                <MaterialIcon icon={cat.icon} size={18} style={{ color: 'var(--color-cyan-accent)' }} />
+                <MaterialIcon
+                  icon={cat.icon}
+                  size={18}
+                  style={{ color: "var(--color-cyan-accent)" }}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <h3
