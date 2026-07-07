@@ -63,6 +63,8 @@ export const api = {
 
   // Categories
   getCategories: () => apiFetch<Category[]>('/categories/'),
+  createCategory: (data: { name: string; description?: string }) =>
+    apiFetch<Category>('/categories/', { method: 'POST', body: JSON.stringify(data) }),
 
   // Products
   getProducts: (search = '', categoryId?: number, page = 1, limit = 20) => {

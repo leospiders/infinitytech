@@ -205,3 +205,11 @@ export function usePublicInventorySearch(q: string, limit = 20) {
   });
 }
 
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; description?: string }) => api.createCategory(data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); },
+  });
+}
+
