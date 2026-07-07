@@ -1,23 +1,36 @@
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from "../stores/authStore";
 import type {
-  PaginatedResponse, Category, Product, WorkOrder,
-  Sale, DashboardMetrics, ReportPeriodOut, HistoryItem, EmployeeProfile,
+  PaginatedResponse,
+  Category,
+  Product,
+  WorkOrder,
+  Sale,
+  DashboardMetrics,
+  ReportPeriodOut,
+  HistoryItem,
+  EmployeeProfile,
   PublicInventoryResult,
-} from '../types';
+} from "../types";
 
 export function getApiBaseUrl(): string {
   // Use env var, or relative path (Vite dev server proxies /api to backend)
-  return import.meta.env.VITE_API_URL || '/api';
+  return import.meta.env.VITE_API_URL || "/api";
 }
 const BASE_URL = getApiBaseUrl();
 
-async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function apiFetch<T>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
   const token = useAuthStore.getState().token;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
-  const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || `Request failed (${response.status})`);
@@ -26,100 +39,179 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   return response.json();
 }
 
+const isMobileOrTablet = () =>
+  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Fetches the PDF (authenticated) and triggers a real file download on the
+// device. Returns the blob in case the caller needs it for anything else.
+async function downloadPdfBlob(
+  type: "sale" | "work-order",
+  id: number,
+): Promise<Blob> {
+  const token = useAuthStore.getState().token;
+  const endpoint =
+    type === "sale" ? `/sales/${id}/pdf` : `/work-orders/${id}/pdf`;
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to load PDF");
+  const blob = await response.blob();
+
+  const blobUrl = URL.createObjectURL(blob);
+  const filename = `${type === "sale" ? "venta" : "orden-trabajo"}-${id}.pdf`;
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+
+  return blob;
+}
+
+// Normalizes a phone number for wa.me (digits only, no spaces/dashes/+).
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
 export const api = {
   // Auth / Employees
-  getProfile: () => apiFetch<EmployeeProfile>('/employees/me'),
+  getProfile: () => apiFetch<EmployeeProfile>("/employees/me"),
   getEmployees: (activeOnly = false) =>
     apiFetch<EmployeeProfile[]>(`/employees/?active_only=${activeOnly}`),
   approveEmployee: (id: number) =>
-    apiFetch<EmployeeProfile>(`/employees/${id}/approve`, { method: 'PUT' }),
+    apiFetch<EmployeeProfile>(`/employees/${id}/approve`, { method: "PUT" }),
   updateEmployee: (id: number, data: any) =>
-    apiFetch<EmployeeProfile>(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    apiFetch<EmployeeProfile>(`/employees/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   updateMyProfile: (data: { name?: string; phone?: string }) =>
-    apiFetch<EmployeeProfile>('/employees/me', { method: 'PUT', body: JSON.stringify(data) }),
+    apiFetch<EmployeeProfile>("/employees/me", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   deleteEmployee: (id: number) =>
-    apiFetch<void>(`/employees/${id}`, { method: 'DELETE' }),
-  getPendingEmployees: () => apiFetch<any[]>('/employees/pending'),
+    apiFetch<void>(`/employees/${id}`, { method: "DELETE" }),
+  getPendingEmployees: () => apiFetch<any[]>("/employees/pending"),
   approvePendingEmployee: (uuid: string, role: string) =>
     apiFetch<EmployeeProfile>(`/employees/pending/${uuid}/approve`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({ role }),
     }),
   rejectPendingEmployee: (uuid: string, reason?: string) =>
     apiFetch<void>(`/employees/pending/${uuid}/reject`, {
-      method: 'DELETE',
+      method: "DELETE",
       body: reason ? JSON.stringify({ reason }) : undefined,
     }),
 
   // Public inventory search (no auth)
   getPublicInventorySearch: (q: string, limit = 20) => {
     const params = new URLSearchParams({ limit: String(limit) });
-    if (q) params.set('q', q);
-    return fetch(`${getApiBaseUrl()}/public/inventory/search?${params}`).then(r => {
-      if (!r.ok) throw new Error('Failed to search inventory');
-      return r.json() as Promise<PublicInventoryResult[]>;
-    });
+    if (q) params.set("q", q);
+    return fetch(`${getApiBaseUrl()}/public/inventory/search?${params}`).then(
+      (r) => {
+        if (!r.ok) throw new Error("Failed to search inventory");
+        return r.json() as Promise<PublicInventoryResult[]>;
+      },
+    );
   },
 
   // Categories
-  getCategories: () => apiFetch<Category[]>('/categories/'),
+  getCategories: () => apiFetch<Category[]>("/categories/"),
   createCategory: (data: { name: string; description?: string }) =>
-    apiFetch<Category>('/categories/', { method: 'POST', body: JSON.stringify(data) }),
+    apiFetch<Category>("/categories/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   // Products
-  getProducts: (search = '', categoryId?: number, page = 1, limit = 20) => {
-    const params = new URLSearchParams({ search, page: String(page), limit: String(limit) });
-    if (categoryId) params.set('category_id', String(categoryId));
+  getProducts: (search = "", categoryId?: number, page = 1, limit = 20) => {
+    const params = new URLSearchParams({
+      search,
+      page: String(page),
+      limit: String(limit),
+    });
+    if (categoryId) params.set("category_id", String(categoryId));
     return apiFetch<PaginatedResponse<Product>>(`/products/?${params}`);
   },
   getProduct: (id: number) => apiFetch<Product>(`/products/${id}`),
-  getLowStockCount: () => apiFetch<{ count: number }>('/products/low-stock-count/'),
+  getLowStockCount: () =>
+    apiFetch<{ count: number }>("/products/low-stock-count/"),
   createProduct: (data: Partial<Product>) =>
-    apiFetch<Product>('/products/', { method: 'POST', body: JSON.stringify(data) }),
+    apiFetch<Product>("/products/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   updateProduct: (id: number, data: Partial<Product>) =>
-    apiFetch<Product>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    apiFetch<Product>(`/products/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   deleteProduct: (id: number) =>
-    apiFetch<void>(`/products/${id}`, { method: 'DELETE' }),
+    apiFetch<void>(`/products/${id}`, { method: "DELETE" }),
 
   // Work Orders
-  getWorkOrders: (search = '', status = '', assignedId?: number, page = 1, limit = 20) => {
-    const params = new URLSearchParams({ search, status, page: String(page), limit: String(limit) });
-    if (assignedId) params.set('assigned_id', String(assignedId));
+  getWorkOrders: (
+    search = "",
+    status = "",
+    assignedId?: number,
+    page = 1,
+    limit = 20,
+  ) => {
+    const params = new URLSearchParams({
+      search,
+      status,
+      page: String(page),
+      limit: String(limit),
+    });
+    if (assignedId) params.set("assigned_id", String(assignedId));
     return apiFetch<PaginatedResponse<WorkOrder>>(`/work-orders/?${params}`);
   },
   getWorkOrder: (id: number) => apiFetch<WorkOrder>(`/work-orders/${id}`),
   createWorkOrder: (data: any) =>
-    apiFetch<WorkOrder>('/work-orders/', { method: 'POST', body: JSON.stringify(data) }),
+    apiFetch<WorkOrder>("/work-orders/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   updateWorkOrder: (id: number, data: any) =>
-    apiFetch<WorkOrder>(`/work-orders/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  transferWorkOrder: (id: number, data: { to_employee_id: number; reason?: string }) =>
-    apiFetch<WorkOrder>(`/work-orders/${id}/transfer`, { method: 'POST', body: JSON.stringify(data) }),
+    apiFetch<WorkOrder>(`/work-orders/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  transferWorkOrder: (
+    id: number,
+    data: { to_employee_id: number; reason?: string },
+  ) =>
+    apiFetch<WorkOrder>(`/work-orders/${id}/transfer`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   // Sales
-  getSales: (search = '', page = 1, limit = 20) => {
-    const params = new URLSearchParams({ search, page: String(page), limit: String(limit) });
+  getSales: (search = "", page = 1, limit = 20) => {
+    const params = new URLSearchParams({
+      search,
+      page: String(page),
+      limit: String(limit),
+    });
     return apiFetch<PaginatedResponse<Sale>>(`/sales/?${params}`);
   },
   getSale: (id: number) => apiFetch<Sale>(`/sales/${id}`),
   createSale: (data: any) =>
-    apiFetch<Sale>('/sales/', { method: 'POST', body: JSON.stringify(data) }),
-  // PDF — print via auth header (no JWT in URL)
-  printPdf: async (type: 'sale' | 'work-order', id: number) => {
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    apiFetch<Sale>("/sales/", { method: "POST", body: JSON.stringify(data) }),
 
-    if (isMobile) {
-      // Open blank window synchronously (bypass popup blocker)
-      const pdfWindow = window.open('', '_blank');
-      if (!pdfWindow) return; // popup blocked
-      pdfWindow.document.write(
-        '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">Cargando PDF...</div>'
-      );
+  // PDF — print via auth header (no JWT in URL)
+  printPdf: async (type: "sale" | "work-order", id: number) => {
+    if (isMobileOrTablet()) {
+      // Mobile/tablet: there's no reliable print dialog, so we download the
+      // PDF directly. The OS/browser then lets the user open or print it
+      // from its own PDF viewer / Downloads.
       try {
-        const shareUrl = await api.getSharePdfUrl(type, id);
-        pdfWindow.location.href = shareUrl;
+        await downloadPdfBlob(type, id);
       } catch (e) {
-        pdfWindow.close();
-        console.error('Failed to open PDF on mobile:', e);
+        console.error("Failed to download PDF on mobile:", e);
       }
       return;
     }
@@ -127,28 +219,31 @@ export const api = {
     // Desktop: iframe off-screen + print dialog
     try {
       const token = useAuthStore.getState().token;
-      const endpoint = type === 'sale' ? `/sales/${id}/pdf` : `/work-orders/${id}/pdf`;
+      const endpoint =
+        type === "sale" ? `/sales/${id}/pdf` : `/work-orders/${id}/pdf`;
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error('Failed to load PDF');
+      if (!response.ok) throw new Error("Failed to load PDF");
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
 
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = 'none';
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
 
       let cleanedUp = false;
       const cleanup = () => {
         if (cleanedUp) return;
         cleanedUp = true;
         URL.revokeObjectURL(blobUrl);
-        try { if (iframe.parentNode) document.body.removeChild(iframe); } catch {}
+        try {
+          if (iframe.parentNode) document.body.removeChild(iframe);
+        } catch {}
       };
 
       iframe.onload = () => {
@@ -164,43 +259,70 @@ export const api = {
       document.body.appendChild(iframe);
       iframe.src = blobUrl;
     } catch (e) {
-      console.error('Print failed:', e);
+      console.error("Print failed:", e);
     }
   },
 
-  // Share link for WhatsApp (short-lived token, no JWT in URL)
-  getSharePdfUrl: async (type: 'sale' | 'work-order', id: number): Promise<string> => {
-    const endpoint = type === 'sale'
-      ? `/sales/${id}/share-link`
-      : `/work-orders/${id}/share-link`;
+  // Share link for WhatsApp (short-lived token, no JWT in URL) — still used
+  // anywhere a plain shareable link is needed (e.g. copy link elsewhere).
+  getSharePdfUrl: async (
+    type: "sale" | "work-order",
+    id: number,
+  ): Promise<string> => {
+    const endpoint =
+      type === "sale"
+        ? `/sales/${id}/share-link`
+        : `/work-orders/${id}/share-link`;
     const { url } = await apiFetch<{ url: string }>(endpoint);
     // Return absolute URL for WhatsApp sharing
-    const base = import.meta.env.VITE_API_URL || window.location.origin + '/api';
-    return base.replace('/api', '') + url;
+    const base =
+      import.meta.env.VITE_API_URL || window.location.origin + "/api";
+    return base.replace("/api", "") + url;
   },
 
-  // WhatsApp share — uses short-lived share link instead of JWT URL
-  sharePdfOnWhatsApp: async (type: 'sale' | 'work-order', id: number, label: string) => {
+  // WhatsApp share — downloads the PDF to the device and opens the chat
+  // with the client's number directly. WhatsApp Web/app doesn't allow a
+  // file to be pre-attached via URL, so the user attaches the just
+  // downloaded file manually from the chat (it'll be in Downloads).
+  sharePdfOnWhatsApp: async (
+    type: "sale" | "work-order",
+    id: number,
+    label: string,
+    clientPhone: string,
+  ) => {
     try {
-      const shareUrl = await api.getSharePdfUrl(type, id);
-      const text = encodeURIComponent(`${label}\n${shareUrl}`);
-      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-    } catch {
-      console.error('Failed to generate share link');
+      await downloadPdfBlob(type, id);
+    } catch (e) {
+      console.error("Failed to download PDF for WhatsApp share:", e);
+      return; // don't open WhatsApp if we couldn't even get the file
     }
+
+    const phone = normalizePhone(clientPhone);
+    const text = encodeURIComponent(
+      `${label}\nTe compartimos tu comprobante en PDF. Adjuntalo desde tu carpeta de Descargas 📎`,
+    );
+    window.open(
+      `https://api.whatsapp.com/send?phone=${phone}&text=${text}`,
+      "_blank",
+    );
   },
 
   // Dashboard
   getDashboardMetrics: (technicianId?: number) => {
-    const params = technicianId ? `?technician_id=${technicianId}` : '';
+    const params = technicianId ? `?technician_id=${technicianId}` : "";
     return apiFetch<DashboardMetrics>(`/dashboard/${params}`);
   },
   getReportPeriods: () =>
-    apiFetch<ReportPeriodOut[]>('/dashboard/report-periods'),
+    apiFetch<ReportPeriodOut[]>("/dashboard/report-periods"),
 
   // History
-  getHistory: (search = '', typeFilter = '', page = 1, limit = 20) => {
-    const params = new URLSearchParams({ search, type_filter: typeFilter, page: String(page), limit: String(limit) });
+  getHistory: (search = "", typeFilter = "", page = 1, limit = 20) => {
+    const params = new URLSearchParams({
+      search,
+      type_filter: typeFilter,
+      page: String(page),
+      limit: String(limit),
+    });
     return apiFetch<PaginatedResponse<HistoryItem>>(`/history/?${params}`);
   },
 };
@@ -211,11 +333,11 @@ export async function downloadWeeklyReportHtml(period: string) {
     `${BASE_URL}/dashboard/weekly-report/html?period=${encodeURIComponent(period)}`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
-  if (!response.ok) throw new Error('Failed to download report');
+  if (!response.ok) throw new Error("Failed to download report");
   const html = await response.text();
-  const blob = new Blob([html], { type: 'text/html' });
+  const blob = new Blob([html], { type: "text/html" });
   const blobUrl = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = blobUrl;
   a.download = `reporte-semanal-${period}.html`;
   document.body.appendChild(a);
@@ -223,5 +345,3 @@ export async function downloadWeeklyReportHtml(period: string) {
   document.body.removeChild(a);
   URL.revokeObjectURL(blobUrl);
 }
-
-
