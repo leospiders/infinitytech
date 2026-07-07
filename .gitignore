@@ -24,10 +24,12 @@ build/
 
 # OpenCode config (may contain tokens)
 .opencode/
+opencode.log
 
 # Tooling internals
 .agents/
 .atl/
+skills-lock.json
 
 # Logs
 *.log
@@ -121,3 +123,11 @@ frontend/model/
 
 # Local repo directories to ignore
 paru/
+
+# Design/prompt files (internal docs)
+"Infinity Technology*"
+
+# Frontend env files
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
