@@ -108,11 +108,17 @@ export const api = {
     const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-      // Mobile: open PDF in new tab via share link (no auth needed)
+      // Open blank window synchronously (bypass popup blocker)
+      const pdfWindow = window.open('', '_blank');
+      if (!pdfWindow) return; // popup blocked
+      pdfWindow.document.write(
+        '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif">Cargando PDF...</div>'
+      );
       try {
         const shareUrl = await api.getSharePdfUrl(type, id);
-        window.open(shareUrl, '_blank');
+        pdfWindow.location.href = shareUrl;
       } catch (e) {
+        pdfWindow.close();
         console.error('Failed to open PDF on mobile:', e);
       }
       return;
