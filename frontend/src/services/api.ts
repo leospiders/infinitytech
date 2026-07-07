@@ -105,6 +105,20 @@ export const api = {
     apiFetch<Sale>('/sales/', { method: 'POST', body: JSON.stringify(data) }),
   // PDF — print via auth header (no JWT in URL)
   printPdf: async (type: 'sale' | 'work-order', id: number) => {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // Mobile: open PDF in new tab via share link (no auth needed)
+      try {
+        const shareUrl = await api.getSharePdfUrl(type, id);
+        window.open(shareUrl, '_blank');
+      } catch (e) {
+        console.error('Failed to open PDF on mobile:', e);
+      }
+      return;
+    }
+
+    // Desktop: iframe off-screen + print dialog
     try {
       const token = useAuthStore.getState().token;
       const endpoint = type === 'sale' ? `/sales/${id}/pdf` : `/work-orders/${id}/pdf`;
@@ -137,7 +151,6 @@ export const api = {
             iframe.contentWindow?.focus();
             iframe.contentWindow?.print();
           } catch {}
-          // Clean up after giving time for the print dialog
           setTimeout(cleanup, 5000);
         }, 1500);
       };

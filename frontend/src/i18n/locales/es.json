@@ -42,8 +42,8 @@
   "dashboard": {
     "title": "Dashboard de Negocio",
     "myTitle": "Mi Dashboard",
-    "subtitleTech": "Bienvenido de nuevo, {{name}} — Aquí están tus estadísticas.",
-    "subtitleAdmin": "Bienvenido de nuevo, {{name}} — Resumen del día.",
+    "subtitleTech": "Aquí están tus estadísticas.",
+    "subtitleAdmin": "Resumen del día.",
     "allTechnicians": "Todos los Técnicos",
     "myRevenue": "Mi Ingreso Hoy",
     "combinedRevenue": "Ingreso Total Hoy",

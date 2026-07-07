@@ -42,8 +42,8 @@
   "dashboard": {
     "title": "Business Dashboard",
     "myTitle": "My Dashboard",
-    "subtitleTech": "Welcome back, {{name}} — Here are your stats.",
-    "subtitleAdmin": "Welcome back, {{name}} — Today's overview.",
+    "subtitleTech": "Your stats.",
+    "subtitleAdmin": "Overview.",
     "allTechnicians": "All Technicians",
     "myRevenue": "My Revenue Today",
     "combinedRevenue": "Combined Revenue Today",
