@@ -240,8 +240,12 @@ export function LandingFooter({ onRequestLogin }: Props) {
             style={{
               borderColor: "var(--c-border)",
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-cyan-accent)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--c-border)'}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.borderColor = "var(--color-cyan-accent)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.borderColor = "var(--c-border)")
+            }
           >
             <iframe
               title="Ubicación Infinity Tech"
@@ -268,8 +272,7 @@ export function LandingFooter({ onRequestLogin }: Props) {
             opacity: 0.6,
           }}
         >
-          © {new Date().getFullYear()} Infinity Technology. Todos los derechos
-          reservados.
+          © {new Date().getFullYear()} Infinity Technology | Dev by leospiders
         </p>
         <button
           onClick={onRequestLogin}
@@ -291,7 +294,7 @@ export function LandingFooter({ onRequestLogin }: Props) {
             size={12}
             style={{ color: "var(--color-cyan-accent)" }}
           />
-          Acceso personal autorizado
+          Personal autorizado
         </button>
       </div>
     </footer>

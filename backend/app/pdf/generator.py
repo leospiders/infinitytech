@@ -487,7 +487,7 @@ def _watermark(canvas, doc):
         dh = ih * scale
 
         canvas.saveState()
-        canvas.setFillAlpha(0.08)
+        canvas.setFillAlpha(0.40)
         canvas.drawImage(
             img,
             (PAGE_W - dw) / 2,
@@ -554,9 +554,9 @@ def _draw_banner(story, title):
     style = ParagraphStyle(
         "banner",
         fontName="Helvetica-Bold",
-        fontSize=7.5,
+        fontSize=11,
         alignment=TA_CENTER,
-        leading=9,
+        leading=13,
         textColor=WHITE,
     )
     banner = Table([[Paragraph(title.upper(), style)]], colWidths=[CW])
