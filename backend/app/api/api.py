@@ -6,9 +6,13 @@ from app.api.work_orders import router as work_orders_router
 from app.api.sales import router as sales_router
 from app.api.dashboard import router as dashboard_router
 from app.api.history import router as history_router
+from app.api.auth import router as auth_router
+from app.api.public import router as public_router
 
 api_router = APIRouter()
 
+api_router.include_router(auth_router)
+api_router.include_router(public_router)
 api_router.include_router(employees_router)
 api_router.include_router(categories_router)
 api_router.include_router(products_router)

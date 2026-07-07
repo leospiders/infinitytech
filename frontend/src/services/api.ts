@@ -1,7 +1,8 @@
 import { useAuthStore } from '../stores/authStore';
 import type {
   PaginatedResponse, Category, Product, WorkOrder,
-  Sale, DashboardMetrics, WeeklySnapshot, HistoryItem, EmployeeProfile
+  Sale, DashboardMetrics, WeeklySnapshot, PeriodicReportOut, ReportPeriodOut, HistoryItem, EmployeeProfile,
+  RepuestoStockItem, PublicProduct, PublicInventoryResult,
 } from '../types';
 
 export function getApiBaseUrl(): string {
@@ -34,6 +35,60 @@ export const api = {
     apiFetch<EmployeeProfile>(`/employees/${id}/approve`, { method: 'PUT' }),
   updateEmployee: (id: number, data: any) =>
     apiFetch<EmployeeProfile>(`/employees/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateMyProfile: (data: { name?: string; phone?: string }) =>
+    apiFetch<EmployeeProfile>('/employees/me', { method: 'PUT', body: JSON.stringify(data) }),
+  deleteEmployee: (id: number) =>
+    apiFetch<void>(`/employees/${id}`, { method: 'DELETE' }),
+  getPendingEmployees: () => apiFetch<any[]>('/employees/pending'),
+  approvePendingEmployee: (uuid: string, role: string) =>
+    apiFetch<EmployeeProfile>(`/employees/pending/${uuid}/approve`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    }),
+  rejectPendingEmployee: (uuid: string, reason?: string) =>
+    apiFetch<void>(`/employees/pending/${uuid}/reject`, {
+      method: 'DELETE',
+      body: reason ? JSON.stringify({ reason }) : undefined,
+    }),
+
+  // Repuesto stock (TECH_COM, TECH_IT)
+  getRepuestoStock: (search = '') =>
+    apiFetch<RepuestoStockItem[]>(`/products/repuesto-stock?search=${encodeURIComponent(search)}`),
+
+  // My work orders (TECH_COM)
+  getMyWorkOrders: (search = '', status = '', page = 1) => {
+    const params = new URLSearchParams({ search, status, page: String(page), limit: '20' });
+    return apiFetch<PaginatedResponse<WorkOrder>>(`/work-orders/my?${params}`);
+  },
+
+  // Public products (no auth)
+  getPublicProducts: (limit = 50, search = '', type?: string) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (search) params.set('search', search);
+    if (type) params.set('type', type);
+    return fetch(`${getApiBaseUrl()}/public/products?${params}`).then(r => {
+      if (!r.ok) throw new Error('Failed to load products');
+      return r.json() as Promise<PublicProduct[]>;
+    });
+  },
+
+  // Public categories (no auth)
+  getPublicCategories: () => {
+    return fetch(`${getApiBaseUrl()}/public/categories`).then(r => {
+      if (!r.ok) throw new Error('Failed to load categories');
+      return r.json() as Promise<{ id: number; name: string; description: string | null; product_count: number }[]>;
+    });
+  },
+
+  // Public inventory search (no auth)
+  getPublicInventorySearch: (q: string, limit = 20) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (q) params.set('q', q);
+    return fetch(`${getApiBaseUrl()}/public/inventory/search?${params}`).then(r => {
+      if (!r.ok) throw new Error('Failed to search inventory');
+      return r.json() as Promise<PublicInventoryResult[]>;
+    });
+  },
 
   // Categories
   getCategories: () => apiFetch<Category[]>('/categories/'),
@@ -77,20 +132,72 @@ export const api = {
   getSale: (id: number) => apiFetch<Sale>(`/sales/${id}`),
   createSale: (data: any) =>
     apiFetch<Sale>('/sales/', { method: 'POST', body: JSON.stringify(data) }),
-  getReceiptPdfUrl: (saleId: number) => {
-    const token = useAuthStore.getState().token;
-    return `${BASE_URL}/sales/${saleId}/pdf?token=${encodeURIComponent(token || '')}`;
-  },
-  getWorkOrderPdfUrl: (woId: number) => {
-    const token = useAuthStore.getState().token;
-    return `${BASE_URL}/work-orders/${woId}/pdf?token=${encodeURIComponent(token || '')}`;
+  // PDF — print via auth header (no JWT in URL)
+  printPdf: async (type: 'sale' | 'work-order', id: number) => {
+    try {
+      const token = useAuthStore.getState().token;
+      const endpoint = type === 'sale' ? `/sales/${id}/pdf` : `/work-orders/${id}/pdf`;
+      const response = await fetch(`${BASE_URL}${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to load PDF');
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+
+      let cleanedUp = false;
+      const cleanup = () => {
+        if (cleanedUp) return;
+        cleanedUp = true;
+        URL.revokeObjectURL(blobUrl);
+        try { if (iframe.parentNode) document.body.removeChild(iframe); } catch {}
+      };
+
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {}
+          // Clean up after giving time for the print dialog
+          setTimeout(cleanup, 5000);
+        }, 1500);
+      };
+
+      document.body.appendChild(iframe);
+      iframe.src = blobUrl;
+    } catch (e) {
+      console.error('Print failed:', e);
+    }
   },
 
-  // WhatsApp share
-  sharePdfOnWhatsApp: (pdfUrl: string, label: string) => {
-    const absoluteUrl = pdfUrl.startsWith('http') ? pdfUrl : `${window.location.origin}${pdfUrl}`;
-    const text = encodeURIComponent(`${label}\n${absoluteUrl}`);
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  // Share link for WhatsApp (short-lived token, no JWT in URL)
+  getSharePdfUrl: async (type: 'sale' | 'work-order', id: number): Promise<string> => {
+    const endpoint = type === 'sale'
+      ? `/sales/${id}/share-link`
+      : `/work-orders/${id}/share-link`;
+    const { url } = await apiFetch<{ url: string }>(endpoint);
+    // Return absolute URL for WhatsApp sharing
+    const base = import.meta.env.VITE_API_URL || window.location.origin + '/api';
+    return base.replace('/api', '') + url;
+  },
+
+  // WhatsApp share — uses short-lived share link instead of JWT URL
+  sharePdfOnWhatsApp: async (type: 'sale' | 'work-order', id: number, label: string) => {
+    try {
+      const shareUrl = await api.getSharePdfUrl(type, id);
+      const text = encodeURIComponent(`${label}\n${shareUrl}`);
+      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    } catch {
+      console.error('Failed to generate share link');
+    }
   },
 
   // Dashboard
@@ -98,12 +205,14 @@ export const api = {
     const params = technicianId ? `?technician_id=${technicianId}` : '';
     return apiFetch<DashboardMetrics>(`/dashboard/${params}`);
   },
-  resetTestData: () =>
-    apiFetch<{ message: string }>('/dashboard/reset-test-data', { method: 'POST' }),
   getSnapshots: () =>
     apiFetch<WeeklySnapshot[]>('/dashboard/snapshots'),
-  triggerWeeklyReset: () =>
-    apiFetch<WeeklySnapshot[]>('/dashboard/weekly-reset', { method: 'POST' }),
+  triggerPartialReport: () =>
+    apiFetch<PeriodicReportOut>('/dashboard/partial-report', { method: 'POST' }),
+  getReportPeriods: () =>
+    apiFetch<ReportPeriodOut[]>('/dashboard/report-periods'),
+  getReport: (period: string) =>
+    apiFetch<PeriodicReportOut>(`/dashboard/report?period=${encodeURIComponent(period)}`),
 
   // History
   getHistory: (search = '', typeFilter = '', page = 1, limit = 20) => {

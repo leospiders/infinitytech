@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const DOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -38,6 +39,7 @@ export function PatternLock({ value, onChange, disabled }: Props) {
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
+  const { t } = useTranslation();
 
   const r = Math.round(size * 0.05);
   const gap = Math.round(size * 0.325);
@@ -194,12 +196,12 @@ export function PatternLock({ value, onChange, disabled }: Props) {
       <div className="flex items-center gap-2">
         {pattern.length > 0 && (
           <span className="text-xs text-muted">
-            {pattern.length} points selected
+            {t('patternLock.pointsSelected', { count: pattern.length })}
           </span>
         )}
         <button type="button" onClick={handleClear}
           className="text-[10px] text-muted hover:text-brand transition-colors">
-          Clear
+          {t('patternLock.clear')}
         </button>
       </div>
     </div>

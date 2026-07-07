@@ -1,6 +1,7 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { withTranslation, type WithTranslation } from 'react-i18next';
 
-interface Props {
+interface Props extends WithTranslation {
   children: ReactNode;
   fallback?: ReactNode;
 }
@@ -10,7 +11,7 @@ interface State {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryInner extends Component<Props, State> {
   state: State = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): State {
@@ -23,15 +24,16 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const { t } = this.props;
       return this.props.fallback || (
         <div className="neo-card p-8 m-4 text-center">
-          <div className="text-danger font-bold text-sm mb-2">Something went wrong</div>
+          <div className="text-danger font-bold text-sm mb-2">{t('errorBoundary.title')}</div>
           <div className="text-muted text-xs mb-4">{this.state.error?.message}</div>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             className="neo-btn py-2 px-4 text-xs font-semibold"
           >
-            Try Again
+            {t('errorBoundary.tryAgain')}
           </button>
         </div>
       );
@@ -39,3 +41,5 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export const ErrorBoundary = withTranslation()(ErrorBoundaryInner);

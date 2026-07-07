@@ -2,10 +2,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_, and_, func, update
 from sqlalchemy.orm import selectinload
-from app.models.models import Employee, Category, Product, WorkOrder, WorkOrderAssignment, Sale, SaleItem, WeeklySnapshot
+from app.models.models import Employee, Category, Product, WorkOrder, WorkOrderItem, WorkOrderAssignment, Sale, SaleItem, WeeklySnapshot
 from app.schemas.schemas import EmployeeCreate, EmployeeUpdate, CategoryCreate, ProductCreate, ProductUpdate, WorkOrderCreate, WorkOrderUpdate, SaleCreate
 from datetime import datetime, timezone
 import uuid
+import re
+
+
+def sanitize_search(text: str) -> str:
+    """Remove SQL LIKE wildcards from user input to prevent expensive scans and injection."""
+    # Escape % and _ which are LIKE wildcards, then collapse multiple spaces
+    escaped = text.replace("%", "").replace("_", "")
+    return re.sub(r"\s+", " ", escaped).strip()
 
 class EmployeeRepository:
     def __init__(self, db: AsyncSession):
@@ -24,7 +32,7 @@ class EmployeeRepository:
         return result.scalars().first()
 
     async def get_all(self, active_only: bool = False) -> list[Employee]:
-        query = select(Employee)
+        query = select(Employee).filter(Employee.deleted_at == None)
         if active_only:
             query = query.filter(Employee.is_active == True)
         result = await self.db.execute(query)
@@ -99,6 +107,7 @@ class ProductRepository:
     async def get_all_paginated(
         self, search: str = "", category_id: int = None, page: int = 1, limit: int = 20
     ) -> tuple[list[Product], int]:
+        search = sanitize_search(search)
         query = select(Product).options(selectinload(Product.category))
         filters = []
         if search:
@@ -146,6 +155,28 @@ class ProductRepository:
         await self.db.refresh(db_obj)
         return await self.get_by_id(db_obj.id)
 
+    async def get_repuesto_stock(self, search: str = "") -> list[Product]:
+        """Return products from repuesto categories (no price/cost in response)."""
+        search = sanitize_search(search)
+        query = select(Product).options(selectinload(Product.category)).join(
+            Category, Product.category_id == Category.id
+        ).filter(Category.is_repuesto == True)
+        if search:
+            query = query.filter(or_(
+                Product.name.ilike(f"%{search}%"),
+                Product.sku.ilike(f"%{search}%"),
+            ))
+        result = await self.db.execute(query.order_by(Product.name))
+        return list(result.scalars().all())
+
+    async def get_public_non_repuesto(self, limit: int = 20) -> list[Product]:
+        """Return non-repuesto products with prices (no auth required)."""
+        query = select(Product).options(selectinload(Product.category)).join(
+            Category, Product.category_id == Category.id
+        ).filter(Category.is_repuesto == False).limit(limit)
+        result = await self.db.execute(query.order_by(Product.name))
+        return list(result.scalars().all())
+
     async def delete(self, db_obj: Product) -> bool:
         await self.db.delete(db_obj)
         await self.db.commit()
@@ -159,6 +190,7 @@ class WorkOrderRepository:
         query = select(WorkOrder).options(
             selectinload(WorkOrder.assigned_technician),
             selectinload(WorkOrder.created_by),
+            selectinload(WorkOrder.items),
             selectinload(WorkOrder.assignments).selectinload(WorkOrderAssignment.from_employee),
             selectinload(WorkOrder.assignments).selectinload(WorkOrderAssignment.to_employee),
         ).filter(WorkOrder.id == work_order_id)
@@ -173,9 +205,11 @@ class WorkOrderRepository:
     async def get_all_paginated(
         self, search: str = "", status: str = "", assigned_id: int = None, page: int = 1, limit: int = 20
     ) -> tuple[list[WorkOrder], int]:
+        search = sanitize_search(search)
         query = select(WorkOrder).options(
             selectinload(WorkOrder.assigned_technician),
             selectinload(WorkOrder.created_by),
+            selectinload(WorkOrder.items),
             selectinload(WorkOrder.assignments).selectinload(WorkOrderAssignment.from_employee),
             selectinload(WorkOrder.assignments).selectinload(WorkOrderAssignment.to_employee),
         )
@@ -210,30 +244,92 @@ class WorkOrderRepository:
             payment_status = "PAID"
         elif obj_in.amount_paid > 0:
             payment_status = "PARTIAL"
-            
-        db_obj = WorkOrder(
-            status="RECEIVED",
-            customer_name=obj_in.customer_name,
-            phone_number=obj_in.phone_number,
-            imei=obj_in.imei,
-            brand=obj_in.brand,
-            model=obj_in.model,
-            desperfecto=obj_in.desperfecto,
-            diagnostico=obj_in.diagnostico,
-            motivo=obj_in.motivo,
-            total_cost=obj_in.total_cost,
-            amount_paid=obj_in.amount_paid,
-            payment_method=obj_in.payment_method,
-            payment_status=payment_status,
-            warranty_info=obj_in.warranty_info,
-            security_type=obj_in.security_type if obj_in.security_type else None,
-            security_value=obj_in.security_value if obj_in.security_value else None,
-            assigned_technician_id=obj_in.assigned_technician_id,
-            created_by_id=creator_id
-        )
-        self.db.add(db_obj)
-        await self.db.commit()
-        await self.db.refresh(db_obj)
+
+        # If items provided, use first item for legacy fields and sum costs
+        if obj_in.items:
+            first_item = obj_in.items[0]
+            total_cost = sum(it.total_cost for it in obj_in.items)
+            db_obj = WorkOrder(
+                status="progreso",
+                customer_name=obj_in.customer_name,
+                phone_number=obj_in.phone_number,
+                imei=first_item.imei,
+                brand=first_item.brand,
+                model=first_item.model,
+                desperfecto=first_item.desperfecto,
+                diagnostico=first_item.diagnostico,
+                motivo=first_item.motivo,
+                total_cost=total_cost,
+                amount_paid=obj_in.amount_paid,
+                payment_method=obj_in.payment_method,
+                payment_status=payment_status,
+                warranty_info=obj_in.warranty_info,
+                security_type=first_item.security_type,
+                security_value=first_item.security_value,
+                assigned_technician_id=obj_in.assigned_technician_id,
+                created_by_id=creator_id
+            )
+            self.db.add(db_obj)
+            await self.db.commit()
+            await self.db.refresh(db_obj)
+
+            # Create all WorkOrderItems
+            for i, item_in in enumerate(obj_in.items):
+                item = WorkOrderItem(
+                    work_order_id=db_obj.id,
+                    brand=item_in.brand,
+                    model=item_in.model,
+                    imei=item_in.imei,
+                    desperfecto=item_in.desperfecto,
+                    diagnostico=item_in.diagnostico,
+                    motivo=item_in.motivo,
+                    total_cost=item_in.total_cost,
+                    security_type=item_in.security_type,
+                    security_value=item_in.security_value,
+                )
+                self.db.add(item)
+            await self.db.commit()
+        else:
+            # Backward compat: single item via direct fields
+            db_obj = WorkOrder(
+                status="progreso",
+                customer_name=obj_in.customer_name,
+                phone_number=obj_in.phone_number,
+                imei=obj_in.imei,
+                brand=obj_in.brand,
+                model=obj_in.model,
+                desperfecto=obj_in.desperfecto,
+                diagnostico=obj_in.diagnostico,
+                motivo=obj_in.motivo,
+                total_cost=obj_in.total_cost,
+                amount_paid=obj_in.amount_paid,
+                payment_method=obj_in.payment_method,
+                payment_status=payment_status,
+                warranty_info=obj_in.warranty_info,
+                security_type=obj_in.security_type if obj_in.security_type else None,
+                security_value=obj_in.security_value if obj_in.security_value else None,
+                assigned_technician_id=obj_in.assigned_technician_id,
+                created_by_id=creator_id
+            )
+            self.db.add(db_obj)
+            await self.db.commit()
+            await self.db.refresh(db_obj)
+
+            # Create a WorkOrderItem from the legacy fields
+            item = WorkOrderItem(
+                work_order_id=db_obj.id,
+                brand=obj_in.brand,
+                model=obj_in.model,
+                imei=obj_in.imei,
+                desperfecto=obj_in.desperfecto,
+                diagnostico=obj_in.diagnostico,
+                motivo=obj_in.motivo,
+                total_cost=obj_in.total_cost,
+                security_type=obj_in.security_type,
+                security_value=obj_in.security_value,
+            )
+            self.db.add(item)
+            await self.db.commit()
         
         # Log initial assignment if any
         if obj_in.assigned_technician_id:
@@ -256,7 +352,7 @@ class WorkOrderRepository:
         new_tech = update_data.get("assigned_technician_id", prev_tech)
         
         # Auto-set amount_paid = total_cost when delivering without explicit amount
-        if update_data.get("status") == "DELIVERED" and "amount_paid" not in update_data:
+        if update_data.get("status") == "entregado" and "amount_paid" not in update_data:
             update_data["amount_paid"] = db_obj.total_cost
         
         for field in update_data:
@@ -320,6 +416,7 @@ class SaleRepository:
         return result.scalars().first()
 
     async def get_all_paginated(self, search: str = "", page: int = 1, limit: int = 20) -> tuple[list[Sale], int]:
+        search = sanitize_search(search)
         query = select(Sale).options(
             selectinload(Sale.seller),
             selectinload(Sale.items).selectinload(SaleItem.product).selectinload(Product.category),
@@ -353,7 +450,12 @@ class SaleRepository:
                 product = product_res.scalars().first()
                 if not product:
                     raise ValueError(f"Product ID {item.product_id} does not exist.")
-                # Deduct stock
+                # Deduct stock (with validation)
+                if product.stock < item.quantity:
+                    raise ValueError(
+                        f"Insufficient stock for '{product.name}': "
+                        f"requested {item.quantity}, available {product.stock}."
+                    )
                 product.stock -= item.quantity
                 self.db.add(product)
             else:

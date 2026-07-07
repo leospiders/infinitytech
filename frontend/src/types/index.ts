@@ -1,12 +1,48 @@
+export type UserStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED' | 'DELETED';
+
 export interface EmployeeProfile {
   id: number;
   uuid: string;
   email: string;
   name: string;
-  role: 'SUPERADMIN' | 'ADMIN' | 'TECHNICIAN';
+  role: 'ADMIN' | 'TECH_IT' | 'TECH_COM' | 'PENDING';
   phone?: string;
   is_active: boolean;
+  status: UserStatus;
+  rejection_reason?: string;
   created_at: string;
+}
+
+export interface RepuestoStockItem {
+  id: number;
+  uuid: string;
+  name: string;
+  sku: string;
+  stock: number;
+  low_stock_limit: number;
+  category?: Category;
+}
+
+export interface PublicProduct {
+  id: number;
+  name: string;
+  price: number;
+  product_type: string;
+  stock?: number;
+  description?: string;
+  category?: Category;
+}
+
+export interface PublicInventoryResult {
+  id: number;
+  name: string;
+  price: number;
+  product_type: string;
+  category_name: string | null;
+  category_id: number;
+  is_repuesto: boolean;
+  stock: number;
+  in_stock: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -21,6 +57,7 @@ export interface Category {
   uuid: string;
   name: string;
   description?: string;
+  is_repuesto?: boolean;
 }
 
 export interface Product {
@@ -49,7 +86,21 @@ export interface WorkOrderAssignment {
   to_employee: { name: string; email: string };
 }
 
-export type WorkOrderStatus = 'RECEIVED' | 'IN_REVIEW' | 'WAITING_PARTS' | 'IN_PROGRESS' | 'READY' | 'DELIVERED' | 'CANCELLED';
+export type WorkOrderStatus = 'progreso' | 'listo' | 'entregado';
+
+export interface WorkOrderItem {
+  id: number;
+  work_order_id: number;
+  brand: string;
+  model: string;
+  imei?: string;
+  desperfecto: string;
+  diagnostico?: string;
+  motivo?: string;
+  total_cost: number;
+  security_type?: string;
+  security_value?: string;
+}
 
 export interface WorkOrder {
   id: number;
@@ -78,6 +129,7 @@ export interface WorkOrder {
   assigned_technician?: { id: number; name: string; role: string };
   created_by: { id: number; name: string; role: string };
   assignments: WorkOrderAssignment[];
+  items: WorkOrderItem[];
 }
 
 export interface SaleItem {
@@ -114,6 +166,8 @@ export interface DashboardMetrics {
   repairs_revenue_today: number;
   revenue_today: number;
   low_stock_products_count: number;
+  sales_this_week: number;
+  last_report_date: string | null;
   top_sold_products: Array<{ name: string; sku: string; quantity: number }>;
   employee_activity: Array<{
     employee_id: number;
@@ -131,8 +185,27 @@ export interface WeeklySnapshot {
   snapshot_week: string;
   total_sales: number;
   completed_repairs: number;
+  is_definitive: boolean;
   created_at: string;
   employee: { name: string; role: string };
+}
+
+export interface PeriodicReportOut {
+  period_start: string;
+  period_end: string;
+  is_definitive: boolean;
+  total_sales: number;
+  total_repairs: number;
+  employees: WeeklySnapshot[];
+}
+
+export interface ReportPeriodOut {
+  label: string;
+  is_definitive: boolean;
+  generated_at: string;
+  total_sales: number;
+  total_repairs: number;
+  employee_count: number;
 }
 
 export interface HistoryItem {

@@ -17,6 +17,14 @@ class Employee(Base):
     role = Column(String(50), nullable=False)
     phone = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    status = Column(String(20), default="PENDING", nullable=False)
+    approved_by = Column(String(36), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    rejected_by = Column(String(36), nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(String(500), nullable=True)
+    last_login = Column(DateTime, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
 class Category(Base):
@@ -26,6 +34,7 @@ class Category(Base):
     uuid = Column(String(36), default=generate_uuid, unique=True, index=True, nullable=False)
     name = Column(String(100), unique=True, index=True, nullable=False)
     description = Column(String(255), nullable=True)
+    is_repuesto = Column(Boolean, default=False, nullable=False)
 
     products = relationship("Product", back_populates="category")
 
@@ -41,6 +50,7 @@ class Product(Base):
     cost = Column(Float, nullable=False)
     stock = Column(Integer, default=0, nullable=False)
     low_stock_limit = Column(Integer, default=5, nullable=False)
+    product_type = Column(String(20), default="physical", nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     category = relationship("Category", back_populates="products")
@@ -54,7 +64,7 @@ class WorkOrder(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     uuid = Column(String(36), default=generate_uuid, unique=True, index=True, nullable=False)
-    status = Column(String(50), default="RECEIVED", nullable=False)
+    status = Column(String(50), default="progreso", nullable=False)
     customer_name = Column(String(255), nullable=False)
     phone_number = Column(String(50), nullable=False)
     imei = Column(String(50), nullable=True)
@@ -78,6 +88,7 @@ class WorkOrder(Base):
 
     assigned_technician = relationship("Employee", foreign_keys=[assigned_technician_id])
     created_by = relationship("Employee", foreign_keys=[created_by_id])
+    items = relationship("WorkOrderItem", back_populates="work_order", cascade="all, delete-orphan")
     assignments = relationship("WorkOrderAssignment", back_populates="work_order", cascade="all, delete-orphan")
 
     __table_args__ = (
@@ -93,6 +104,24 @@ class WorkOrder(Base):
     @property
     def balance(self) -> float:
         return self.total_cost - self.amount_paid
+
+class WorkOrderItem(Base):
+    __tablename__ = "work_order_items"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    work_order_id = Column(Integer, ForeignKey("work_orders.id"), nullable=False)
+    brand = Column(String(100), nullable=False)
+    model = Column(String(100), nullable=False)
+    imei = Column(String(50), nullable=True)
+    desperfecto = Column(String(500), nullable=False)
+    diagnostico = Column(String(500), nullable=True)
+    motivo = Column(String(500), nullable=True)
+    total_cost = Column(Float, default=0.0, nullable=False)
+    security_type = Column(String(20), nullable=True)
+    security_value = Column(String(255), nullable=True)
+
+    work_order = relationship("WorkOrder", back_populates="items")
+
 
 class WorkOrderAssignment(Base):
     __tablename__ = "work_order_assignments"
@@ -162,6 +191,7 @@ class WeeklySnapshot(Base):
     snapshot_week = Column(String(10), nullable=False)
     total_sales = Column(Float, default=0.0, nullable=False)
     completed_repairs = Column(Integer, default=0, nullable=False)
+    is_definitive = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     employee = relationship("Employee")

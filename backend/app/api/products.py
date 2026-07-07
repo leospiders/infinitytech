@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from app.db.session import get_db
 from app.core.auth import get_current_user, require_role
 from app.models.models import Employee, Product
-from app.schemas.schemas import ProductInDB, ProductCreate, ProductUpdate
+from app.schemas.schemas import ProductInDB, ProductCreate, ProductUpdate, RepuestoStockOut
 from app.repositories.base_repos import ProductRepository
 from pydantic import BaseModel
 from typing import List
@@ -24,11 +24,11 @@ async def list_products(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
-    current_user: Employee = Depends(get_current_user)
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
 ):
     """
-    Get paginated products with server-side filters and indexed search queries.
-    Avoids memory bloating by loading only requested chunk from SQLite database.
+    Get paginated products with server-side filters.
+    TECH_IT and ADMIN only.
     """
     repo = ProductRepository(db)
     items, total = await repo.get_all_paginated(
@@ -41,10 +41,25 @@ async def list_products(
         limit=limit
     )
 
+
+@router.get("/repuesto-stock", response_model=list[RepuestoStockOut])
+async def list_repuesto_stock(
+    search: str = Query("", description="Search by name or SKU"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT", "TECH_COM"]))
+):
+    """
+    Get repuesto products with stock counts only (no prices).
+    Accessible to TECH_COM, TECH_IT, and ADMIN.
+    """
+    repo = ProductRepository(db)
+    return await repo.get_repuesto_stock(search=search)
+
+
 @router.get("/low-stock-count/")
 async def get_low_stock_count(
     db: AsyncSession = Depends(get_db),
-    current_user: Employee = Depends(get_current_user)
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
 ):
     """Returns the count of products whose stock is at or below their low_stock_limit."""
     result = await db.execute(
@@ -52,51 +67,49 @@ async def get_low_stock_count(
     )
     return {"count": result.scalar() or 0}
 
+
 @router.get("/{product_id}", response_model=ProductInDB)
 async def get_product(
     product_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Employee = Depends(get_current_user)
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
 ):
-    """
-    Get detail of a single product.
-    """
+    """Get detail of a single product."""
     repo = ProductRepository(db)
     product = await repo.get_by_id(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
+
 @router.post("/", response_model=ProductInDB, status_code=status.HTTP_201_CREATED)
 async def create_product(
     obj_in: ProductCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Employee = Depends(require_role(["ADMIN", "TECHNICIAN"]))
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
 ):
-    """
-    Add a new product to inventory (Admins and Technicians only).
-    """
+    """Create a new product."""
     repo = ProductRepository(db)
     existing = await repo.get_by_sku(obj_in.sku)
     if existing:
-        raise HTTPException(status_code=400, detail="Product with this SKU/Barcode already exists")
+        raise HTTPException(status_code=400, detail="Product with this SKU already exists")
     return await repo.create(obj_in)
+
 
 @router.put("/{product_id}", response_model=ProductInDB)
 async def update_product(
     product_id: int,
     obj_in: ProductUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Employee = Depends(require_role(["ADMIN", "TECHNICIAN"]))
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
 ):
-    """
-    Update product details or inventory count (Admins and Technicians only).
-    """
+    """Update product details or inventory count."""
     repo = ProductRepository(db)
     product = await repo.get_by_id(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return await repo.update(product, obj_in)
+
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
@@ -104,9 +117,7 @@ async def delete_product(
     db: AsyncSession = Depends(get_db),
     current_user: Employee = Depends(require_role(["ADMIN"]))
 ):
-    """
-    Remove product from catalog (Admin-only).
-    """
+    """Remove product from catalog (Admin-only)."""
     repo = ProductRepository(db)
     product = await repo.get_by_id(product_id)
     if not product:

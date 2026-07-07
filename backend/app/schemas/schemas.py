@@ -6,7 +6,7 @@ from typing import Optional, List
 class EmployeeBase(BaseModel):
     email: EmailStr
     name: str
-    role: str  # "ADMIN", "TECHNICIAN", "CASHIER"
+    role: str  # "ADMIN", "TECH_IT", "TECH_COM"
     phone: Optional[str] = None
     is_active: bool = True
 
@@ -22,15 +22,31 @@ class EmployeeUpdate(BaseModel):
 class EmployeeInDB(EmployeeBase):
     id: int
     uuid: str
+    status: str = "PENDING"
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    rejected_by: Optional[str] = None
+    rejected_at: Optional[datetime] = None
+    rejection_reason: Optional[str] = None
+    last_login: Optional[datetime] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
 
+
+class ApproveRequest(BaseModel):
+    role: str
+
+
+class RejectRequest(BaseModel):
+    reason: Optional[str] = None
+
 # --- Category Schemas ---
 class CategoryBase(BaseModel):
     name: str
     description: Optional[str] = None
+    is_repuesto: bool = False
 
 class CategoryCreate(CategoryBase):
     pass
@@ -38,9 +54,56 @@ class CategoryCreate(CategoryBase):
 class CategoryInDB(CategoryBase):
     id: int
     uuid: str
+    is_repuesto: bool = False
 
     class Config:
         from_attributes = True
+
+# --- Repuesto Stock (visible to TECH_COM, no prices) ---
+class RepuestoStockOut(BaseModel):
+    id: int
+    uuid: str
+    name: str
+    sku: str
+    stock: int
+    low_stock_limit: int
+    category: Optional[CategoryInDB] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Public products (visible to anyone, no auth) ---
+class PublicProductOut(BaseModel):
+    id: int
+    name: str
+    price: float
+    product_type: str = "physical"
+    category: Optional[CategoryInDB] = None
+
+    class Config:
+        from_attributes = True
+
+class PublicCategoryOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    product_count: int = 0
+
+
+class PublicInventoryResult(BaseModel):
+    id: int
+    name: str
+    price: float
+    product_type: str = "physical"
+    category_name: Optional[str] = None
+    category_id: int
+    is_repuesto: bool = False
+    stock: int = 0
+    in_stock: bool = False
+
+    class Config:
+        from_attributes = True
+
 
 # --- Product Schemas ---
 class ProductBase(BaseModel):
@@ -51,6 +114,7 @@ class ProductBase(BaseModel):
     cost: float
     stock: int = 0
     low_stock_limit: int = 5
+    product_type: str = "physical"
 
 class ProductCreate(ProductBase):
     pass
@@ -63,6 +127,7 @@ class ProductUpdate(BaseModel):
     cost: Optional[float] = None
     stock: Optional[int] = None
     low_stock_limit: Optional[int] = None
+    product_type: Optional[str] = None
 
 class ProductInDB(ProductBase):
     id: int
@@ -74,13 +139,34 @@ class ProductInDB(ProductBase):
         from_attributes = True
 
 # --- Work Order Schemas ---
+class WorkOrderItemBase(BaseModel):
+    brand: str
+    model: str
+    imei: Optional[str] = None
+    desperfecto: str
+    diagnostico: Optional[str] = None
+    motivo: Optional[str] = None
+    total_cost: float = 0.0
+    security_type: Optional[str] = None
+    security_value: Optional[str] = None
+
+class WorkOrderItemCreate(WorkOrderItemBase):
+    pass
+
+class WorkOrderItemInDB(WorkOrderItemBase):
+    id: int
+    work_order_id: int
+
+    class Config:
+        from_attributes = True
+
 class WorkOrderBase(BaseModel):
     customer_name: str
     phone_number: str
     imei: Optional[str] = None
-    brand: str
-    model: str
-    desperfecto: str
+    brand: str = ""
+    model: str = ""
+    desperfecto: str = ""
     diagnostico: Optional[str] = None
     motivo: Optional[str] = None
     total_cost: float = 0.0
@@ -92,6 +178,7 @@ class WorkOrderBase(BaseModel):
 
 class WorkOrderCreate(WorkOrderBase):
     assigned_technician_id: Optional[int] = None
+    items: Optional[list[WorkOrderItemCreate]] = None
 
 class WorkOrderUpdate(BaseModel):
     status: Optional[str] = None  # RECEIVED, IN_REVIEW, WAITING_PARTS, IN_PROGRESS, READY, DELIVERED, CANCELLED
@@ -125,7 +212,7 @@ class WorkOrderAssignmentInDB(WorkOrderAssignmentBase):
     from_employee_id: Optional[int] = None
     assigned_at: datetime
     from_employee: Optional[EmployeeInDB] = None
-    to_employee: EmployeeInDB = None
+    to_employee: Optional[EmployeeInDB] = None
 
     class Config:
         from_attributes = True
@@ -139,9 +226,10 @@ class WorkOrderInDB(WorkOrderBase):
     assigned_technician_id: Optional[int] = None
     created_by_id: int
     created_at: datetime
+    items: list[WorkOrderItemInDB] = []
     updated_at: datetime
     assigned_technician: Optional[EmployeeInDB] = None
-    created_by: EmployeeInDB = None
+    created_by: Optional[EmployeeInDB] = None
     assignments: List[WorkOrderAssignmentInDB] = []
 
     class Config:
@@ -188,7 +276,7 @@ class SaleInDB(BaseModel):
     warranty_info: Optional[str] = None
     pdf_path: Optional[str] = None
     created_at: datetime
-    seller: EmployeeInDB
+    seller: Optional[EmployeeInDB] = None
     items: List[SaleItemInDB] = []
 
     class Config:
@@ -202,6 +290,7 @@ class WeeklySnapshotInDB(BaseModel):
     snapshot_week: str
     total_sales: float
     completed_repairs: int
+    is_definitive: bool = False
     created_at: datetime
     employee: EmployeeInDB
 
@@ -215,5 +304,25 @@ class DashboardMetrics(BaseModel):
     repairs_revenue_today: float = 0.0
     revenue_today: float
     low_stock_products_count: int
+    sales_this_week: float = 0.0  # sales from last report (or Monday) to now
+    last_report_date: Optional[str] = None  # ISO datetime of most recent snapshot
     top_sold_products: List[dict]  # product details + sold quantity
     employee_activity: List[dict]  # employee names + sales totals + repair counts
+
+class PeriodicReportOut(BaseModel):
+    """A single report response (partial or definitive)."""
+    period_start: str
+    period_end: str
+    is_definitive: bool = False
+    total_sales: float
+    total_repairs: int
+    employees: List[WeeklySnapshotInDB]
+
+class ReportPeriodOut(BaseModel):
+    """Summary for a period — used in the select dropdown."""
+    label: str
+    is_definitive: bool = False
+    generated_at: str
+    total_sales: float
+    total_repairs: int
+    employee_count: int

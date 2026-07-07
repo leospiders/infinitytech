@@ -4,10 +4,34 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Infinity Technology POS & Technical Service Management System</title>
+    <title>Infinity Technology | Precision Repair & Wholesale</title>
     <meta name="description" content="Modern, scalable, and high-performance Web POS and repairs queue management system for technical business operations." />
+
+    <!-- Google Fonts: Inter + Space Grotesk + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <script>
+      // Prevent light-mode flash: detect theme BEFORE first paint
+      (function() {
+        var theme = localStorage.getItem('theme');
+        if (theme === 'dark' || (theme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      })();
+    </script>
+    <style>
+      html.dark-mode body { background: #141313; }
+    </style>
   </head>
   <body>
+    <script>
+      // Move class to body (CSS rules use body.dark-mode)
+      if (document.documentElement.classList.contains('dark-mode')) {
+        document.body.classList.add('dark-mode');
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

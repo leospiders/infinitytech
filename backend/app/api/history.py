@@ -72,13 +72,14 @@ async def get_unified_history(
                 total=s.total,
                 status="COMPLETED",
                 payment_method=s.payment_method,
-                data=s,
+                data=SaleInDB.model_validate(s),
             ))
 
     if not type_filter or type_filter == "repair":
         repair_query = select(WorkOrder).options(
             selectinload(WorkOrder.assigned_technician),
             selectinload(WorkOrder.created_by),
+            selectinload(WorkOrder.items),
             selectinload(WorkOrder.assignments).selectinload(WorkOrderAssignment.from_employee),
             selectinload(WorkOrder.assignments).selectinload(WorkOrderAssignment.to_employee),
         )
@@ -108,7 +109,7 @@ async def get_unified_history(
                 total=wo.total_cost,
                 status=wo.status,
                 payment_method=wo.payment_method or "",
-                data=wo,
+                data=WorkOrderInDB.model_validate(wo),
             ))
 
     combined.sort(key=lambda h: h.created_at, reverse=True)

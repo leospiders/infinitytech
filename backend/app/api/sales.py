@@ -1,15 +1,21 @@
+import logging
+from datetime import datetime, timedelta
+import jwt
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
+
+logger = logging.getLogger("infinity")
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.auth import get_current_user, require_role
+from app.core.config import settings
 from app.models.models import Employee
 from app.schemas.schemas import SaleInDB, SaleCreate
 from app.repositories.base_repos import SaleRepository
 from app.pdf.generator import generate_pdf_receipt
 from pydantic import BaseModel
 from typing import List
-import os
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
@@ -58,10 +64,10 @@ async def get_sale(
 async def create_sale(
     obj_in: SaleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Employee = Depends(require_role(["ADMIN", "TECHNICIAN"]))
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
 ):
     """
-    Create a new POS transaction (Admins and Technicians).
+    Create a new POS transaction.
     Uses strict inventory deduction and safe transaction-isolated PDF generation.
     """
     repo = SaleRepository(db)
@@ -69,42 +75,13 @@ async def create_sale(
         # 1. Save and commit transaction in DB
         sale = await repo.create(obj_in, seller_id=current_user.id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.warning("Sale creation failed: %s", e)
+        detail = str(e) if "stock" in str(e).lower() else "Invalid sale data"
+        raise HTTPException(status_code=400, detail=detail)
         
     # Refresh sale object with fully loaded relationships for PDF drawing
     sale = await repo.get_by_id(sale.id)
     
-    # 2. Generate PDF receipt safely
-    items_list = []
-    for item in sale.items:
-        items_list.append({
-            "name": item.custom_name or (item.product.name if item.product else "Unknown"),
-            "quantity": item.quantity,
-            "price": item.unit_price,
-            "subtotal": item.subtotal
-        })
-        
-    date_str = sale.created_at.strftime('%Y-%m-%d %H:%M')
-    
-    # Call generator which handles reportlab failures cleanly internally
-    pdf_path = generate_pdf_receipt(
-        sale_id=sale.id,
-        customer_name=sale.customer_name or "General Customer",
-        date_str=date_str,
-        items=items_list,
-        total=sale.total,
-        payment_method=sale.payment_method,
-        seller_name=current_user.name,
-        warranty_info=sale.warranty_info
-    )
-    
-    # 3. If PDF was successfully created, update database record
-    if pdf_path:
-        sale.pdf_path = pdf_path
-        db.add(sale)
-        await db.commit()
-        sale = await repo.get_by_id(sale.id)
-        
     return sale
 
 @router.get("/{sale_id}/pdf")
@@ -114,38 +91,59 @@ async def download_sale_receipt(
     current_user: Employee = Depends(get_current_user)
 ):
     """
-    Serve raw receipt PDF for viewing/printing.
-    If PDF does not exist, re-generate it on the fly before sending.
+    Generate and serve receipt PDF on the fly (no file saved to disk).
     """
     repo = SaleRepository(db)
     sale = await repo.get_by_id(sale_id)
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
         
-    # Check if file exists, if not, generate it!
-    if not sale.pdf_path or not os.path.exists(sale.pdf_path):
-        items_list = [{
-            "name": item.custom_name or (item.product.name if item.product else "Unknown"),
-            "quantity": item.quantity,
-            "price": item.unit_price,
-            "subtotal": item.subtotal
-        } for item in sale.items]
-        
-        pdf_path = generate_pdf_receipt(
-            sale_id=sale.id,
-            customer_name=sale.customer_name or "General Customer",
-            date_str=sale.created_at.strftime('%Y-%m-%d %H:%M'),
-            items=items_list,
-            total=sale.total,
-            payment_method=sale.payment_method,
-            seller_name=sale.seller.name,
-            warranty_info=sale.warranty_info
-        )
-        if pdf_path:
-            sale.pdf_path = pdf_path
-            db.add(sale)
-            await db.commit()
-        else:
-            raise HTTPException(status_code=500, detail="Could not generate receipt PDF file")
-            
-    return FileResponse(sale.pdf_path, media_type="application/pdf", filename=os.path.basename(sale.pdf_path))
+    items_list = [{
+        "name": item.custom_name or (item.product.name if item.product else "Unknown"),
+        "quantity": item.quantity,
+        "price": item.unit_price,
+        "subtotal": item.subtotal
+    } for item in sale.items]
+    
+    pdf_buf = generate_pdf_receipt(
+        sale_id=sale.id,
+        customer_name=sale.customer_name or "General Customer",
+        date_str=sale.created_at.strftime('%Y-%m-%d %H:%M'),
+        items=items_list,
+        total=sale.total,
+        payment_method=sale.payment_method,
+        seller_name=sale.seller.name,
+        warranty_info=sale.warranty_info
+    )
+    if not pdf_buf:
+        raise HTTPException(status_code=500, detail="Could not generate receipt PDF")
+    
+    return Response(
+        content=pdf_buf.getvalue(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=sale_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pdf"}
+    )
+
+
+@router.get("/{sale_id}/share-link")
+async def share_sale_receipt(
+    sale_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
+):
+    """Generate a short-lived share link for WhatsApp."""
+    repo = SaleRepository(db)
+    sale = await repo.get_by_id(sale_id)
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale not found")
+
+    share_token = jwt.encode(
+        {
+            "type": "sale",
+            "id": sale_id,
+            "exp": datetime.utcnow() + timedelta(hours=1),
+        },
+        settings.SHARE_SECRET,
+        algorithm="HS256",
+    )
+    return {"url": f"/_share/pdf/{share_token}", "expires_in": 3600}
