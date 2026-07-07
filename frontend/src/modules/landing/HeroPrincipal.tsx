@@ -108,7 +108,12 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
           >
             {/* Primary Button */}
             <button
-              onClick={onRequestRepair}
+              onClick={() =>
+                window.open(
+                  "https://wa.me/59160574727?text=Hola%2C%20quiero%20agendar%20una%20reparaci%C3%B3n",
+                  "_blank",
+                )
+              }
               className="h-14 px-10 rounded-[20px] text-xs font-bold uppercase tracking-wider cursor-pointer shadow-[0_0_24px_rgba(0,217,255,0.15)] inline-flex items-center justify-center gap-3"
               style={{
                 backgroundColor: "var(--c-primary)",
