@@ -255,8 +255,6 @@ export function LandingView({ onRequestLogin }: Props) {
           <StatsSection />
         </div>
 
-        <TestimonialsSection />
-
         <CTASection />
 
         <div id="contacto">
