@@ -50,21 +50,6 @@ export function HeroPrincipal({ onExplore, onRequestRepair }: Props) {
       <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 grid grid-cols-1 lg:grid-cols-12 gap-8 pt-12">
         {/* Left: Text Block & CTAs */}
         <div className="lg:col-span-8 flex flex-col justify-center">
-          {/* Badge */}
-          <motion.div
-            {...fadeUp(0)}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold tracking-[0.25em] uppercase mb-8 w-fit"
-            style={{
-              backgroundColor: 'rgba(0, 200, 248, 0.08)',
-              border: '1px solid rgba(0, 200, 248, 0.25)',
-              color: 'var(--color-cyan-accent)',
-              fontFamily: '"Space Grotesk", sans-serif',
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan-accent)] animate-pulse" />
-            LABORATORIO DE PRECISIÓN
-          </motion.div>
-
           {/* H1 - Balanced title with gradient text using dashboard variables */}
           <motion.h1
             {...fadeUp(0.12)}
