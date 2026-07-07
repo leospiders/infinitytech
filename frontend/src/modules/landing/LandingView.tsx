@@ -15,16 +15,6 @@ interface Props {
   onRequestLogin: () => void;
 }
 
-/* ─── Color palette — CSS vars ── */
-const C = {
-  text: 'var(--c-text)',
-  textSec: 'var(--c-text-sec)',
-  primary: 'var(--c-primary)',
-  surface: 'var(--c-surface)',
-  hover: 'var(--c-hover)',
-  border: 'var(--c-border)',
-};
-
 export function LandingView({ onRequestLogin }: Props) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
