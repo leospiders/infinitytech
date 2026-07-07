@@ -12,11 +12,22 @@ build/
 .env.local
 *.env.*
 
-# Editors
+# Editors / IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OpenCode config (may contain tokens)
+.opencode/
+
+# Tooling internals
+.agents/
+.atl/
 
 # Logs
 *.log
@@ -87,24 +98,26 @@ yarn-error.log*
 *.a
 *.out
 
-# IDEs
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+# Local databases (SQLite)
+backend/*.db
 
-# Local workspace metadata
-.agents/
-.atl/
+# Supabase local
+backend/supabase/
 
-# Generated files
-**/dist/
-**/build/
+# Local init scripts
+backend/init_db.py
 
 # PDF output
 backend/static/pdf/
+
+# SDD artifacts
+openspec/
+
+# Local static assets
+static/
+
+# Frontend model files
+frontend/model/
 
 # Local repo directories to ignore
 paru/
