@@ -39,7 +39,7 @@ function Greeting({ lang }: { lang: string }) {
         {isMorning
           ? "Buenos días"
           : isAfternoon
-            ? "Buenas tardes"
+            ? "Buenas bro"
             : "Buenas noches"}
       </>
     );
@@ -391,235 +391,228 @@ export function DashboardView() {
       </section>
 
       {/* ════════════════ BOTTOM SECTION ════════════════ */}
-        {/* ─── Actividad Reciente ─── */}
-        <section className="flex flex-col gap-3">
-          {/* Header + download btn */}
-          <div className="flex items-center justify-between">
-            <h3
-              className="text-xs font-bold uppercase tracking-[0.1em]"
-              style={{ color: "var(--c-text-section)" }}
-            >
-              {t("dashboard.reportViewer", "Actividad Reciente")}
-            </h3>
-
-            {isAdmin && latestPeriod && (
-              <button
-                onClick={() => downloadWeeklyReportHtml(latestPeriod)}
-                className="flex items-center justify-center rounded-lg w-7 h-7 transition-all duration-150 hover:scale-[1.02] cursor-pointer"
-                style={{
-                  border: `1px solid ${COLORS.border}`,
-                  color: COLORS.textSecondary,
-                  backgroundColor: "transparent",
-                }}
-                title={t("dashboard.downloadReport", "Reporte Semanal")}
-              >
-                <MaterialIcon icon="description" wght={400} size={16} />
-              </button>
-            )}
-          </div>
-
-          {/* Employee Activity Table (admin only) */}
-          <div
-            className="rounded-xl overflow-hidden"
-            style={{
-              backgroundColor: COLORS.surface,
-              border: `1px solid ${COLORS.border}`,
-            }}
+      {/* ─── Actividad Reciente ─── */}
+      <section className="flex flex-col gap-3">
+        {/* Header + download btn */}
+        <div className="flex items-center justify-between">
+          <h3
+            className="text-xs font-bold uppercase tracking-[0.1em]"
+            style={{ color: "var(--c-text-section)" }}
           >
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr style={{ backgroundColor: "var(--c-surface-alt)" }}>
-                  <th
-                    className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
-                    style={{ color: COLORS.textSecondary }}
-                  >
-                    {t("dashboard.employee")}
-                  </th>
-                  <th
-                    className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-right"
-                    style={{ color: COLORS.textSecondary }}
-                  >
-                    {t("dashboard.sales")}
-                  </th>
-                  <th
-                    className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-right"
-                    style={{ color: COLORS.textSecondary }}
-                  >
-                    {t("dashboard.items", "Artículos")}
-                  </th>
-                  <th
-                    className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-right"
-                    style={{ color: COLORS.textSecondary }}
-                  >
-                    {t("dashboard.repairs")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {(metrics?.employee_activity ?? [])
-                  .map((emp, i) => ({
-                    id: i,
-                    name: emp.name,
-                    sales: emp.sales_total,
-                    items: null,
-                    repairs: emp.repairs_revenue,
-                  }))
-                  .map((row, i) => (
-                    <tr
-                      key={row.id}
-                      className="transition-colors duration-150"
-                      style={{
-                        borderTop: "1px solid var(--c-divider)",
-                        backgroundColor:
-                          i % 2 !== 0 ? "var(--c-table-stripe)" : "transparent",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          "var(--c-hover)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          i % 2 !== 0 ? "var(--c-table-stripe)" : "transparent";
-                      }}
-                    >
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar name={row.name} />
-                          <span
-                            className="text-sm font-medium"
-                            style={{ color: COLORS.textPrimary }}
-                          >
-                            {row.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td
-                        className="py-3.5 px-4 text-right text-sm font-medium tabular-nums"
-                        style={{ color: COLORS.success }}
-                      >
-                        ${row.sales.toFixed(2)}
-                      </td>
-                      <td
-                        className="py-3.5 px-4 text-right text-sm font-medium tabular-nums"
-                        style={{ color: COLORS.warning }}
-                      >
-                        {row.items ?? "—"}
-                      </td>
-                      <td
-                        className="py-3.5 px-4 text-right text-sm font-medium tabular-nums"
-                        style={{ color: COLORS.primary }}
-                      >
-                        {typeof row.repairs === "number"
-                          ? `$${row.repairs.toFixed(2)}`
-                          : row.repairs}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-            {(!metrics?.employee_activity ||
-              metrics.employee_activity.length === 0) && (
-              <div
-                className="py-8 text-center text-xs"
-                style={{ color: COLORS.textSecondary }}
-              >
-                {t("dashboard.noEmployeeActivity")}
-              </div>
-            )}
-          </div>
+            {t("dashboard.reportViewer", "Actividad Reciente")}
+          </h3>
 
-          {/* Tech: Top products */}
-          {!isAdmin &&
-            metrics?.top_sold_products &&
-            metrics.top_sold_products.length > 0 && (
-              <div
-                className="rounded-xl overflow-hidden"
-                style={{
-                  backgroundColor: COLORS.surface,
-                  border: `1px solid ${COLORS.border}`,
-                }}
-              >
-                <div
-                  className="py-3.5 px-4 text-xs font-semibold"
+          {isAdmin && latestPeriod && (
+            <button
+              onClick={() => downloadWeeklyReportHtml(latestPeriod)}
+              className="flex items-center justify-center rounded-lg w-7 h-7 transition-all duration-150 hover:scale-[1.02] cursor-pointer"
+              style={{
+                border: `1px solid ${COLORS.border}`,
+                color: COLORS.textSecondary,
+                backgroundColor: "transparent",
+              }}
+              title={t("dashboard.downloadReport", "Reporte Semanal")}
+            >
+              <MaterialIcon icon="description" wght={400} size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Employee Activity Table (admin only) */}
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            backgroundColor: COLORS.surface,
+            border: `1px solid ${COLORS.border}`,
+          }}
+        >
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr style={{ backgroundColor: "var(--c-surface-alt)" }}>
+                <th
+                  className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider"
                   style={{ color: COLORS.textSecondary }}
                 >
-                  {t(
-                    isTech
-                      ? "dashboard.myTopProducts"
-                      : "dashboard.topProducts",
-                  )}
-                </div>
-                <div
-                  className="divide-y"
-                  style={{ borderTop: "1px solid var(--c-divider)" }}
+                  {t("dashboard.employee")}
+                </th>
+                <th
+                  className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-right"
+                  style={{ color: COLORS.textSecondary }}
                 >
-                  {metrics.top_sold_products.map((p, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between py-3 px-4 transition-colors duration-150"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          "var(--c-hover)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }}
-                    >
-                      <div className="flex flex-col min-w-0">
+                  {t("dashboard.sales")}
+                </th>
+                <th
+                  className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-right"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  {t("dashboard.items", "Artículos")}
+                </th>
+                <th
+                  className="py-3 px-4 text-[11px] font-semibold uppercase tracking-wider text-right"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  {t("dashboard.repairs")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {(metrics?.employee_activity ?? [])
+                .map((emp, i) => ({
+                  id: i,
+                  name: emp.name,
+                  sales: emp.sales_total,
+                  items: null,
+                  repairs: emp.repairs_revenue,
+                }))
+                .map((row, i) => (
+                  <tr
+                    key={row.id}
+                    className="transition-colors duration-150"
+                    style={{
+                      borderTop: "1px solid var(--c-divider)",
+                      backgroundColor:
+                        i % 2 !== 0 ? "var(--c-table-stripe)" : "transparent",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--c-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor =
+                        i % 2 !== 0 ? "var(--c-table-stripe)" : "transparent";
+                    }}
+                  >
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={row.name} />
                         <span
-                          className="text-sm font-medium truncate"
+                          className="text-sm font-medium"
                           style={{ color: COLORS.textPrimary }}
                         >
-                          {p.name}
-                        </span>
-                        <span
-                          className="text-[10px]"
-                          style={{ color: COLORS.textSecondary }}
-                        >
-                          {p.sku}
+                          {row.name}
                         </span>
                       </div>
+                    </td>
+                    <td
+                      className="py-3.5 px-4 text-right text-sm font-medium tabular-nums"
+                      style={{ color: COLORS.success }}
+                    >
+                      ${row.sales.toFixed(2)}
+                    </td>
+                    <td
+                      className="py-3.5 px-4 text-right text-sm font-medium tabular-nums"
+                      style={{ color: COLORS.warning }}
+                    >
+                      {row.items ?? "—"}
+                    </td>
+                    <td
+                      className="py-3.5 px-4 text-right text-sm font-medium tabular-nums"
+                      style={{ color: COLORS.primary }}
+                    >
+                      {typeof row.repairs === "number"
+                        ? `$${row.repairs.toFixed(2)}`
+                        : row.repairs}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+          {(!metrics?.employee_activity ||
+            metrics.employee_activity.length === 0) && (
+            <div
+              className="py-8 text-center text-xs"
+              style={{ color: COLORS.textSecondary }}
+            >
+              {t("dashboard.noEmployeeActivity")}
+            </div>
+          )}
+        </div>
+
+        {/* Tech: Top products */}
+        {!isAdmin &&
+          metrics?.top_sold_products &&
+          metrics.top_sold_products.length > 0 && (
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{
+                backgroundColor: COLORS.surface,
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <div
+                className="py-3.5 px-4 text-xs font-semibold"
+                style={{ color: COLORS.textSecondary }}
+              >
+                {t(
+                  isTech ? "dashboard.myTopProducts" : "dashboard.topProducts",
+                )}
+              </div>
+              <div
+                className="divide-y"
+                style={{ borderTop: "1px solid var(--c-divider)" }}
+              >
+                {metrics.top_sold_products.map((p, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between py-3 px-4 transition-colors duration-150"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--c-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <div className="flex flex-col min-w-0">
                       <span
-                        className="text-xs font-semibold px-2 py-1 rounded shrink-0 ml-2"
-                        style={{
-                          backgroundColor: "var(--c-primary-18)",
-                          color: "var(--c-primary)",
-                        }}
+                        className="text-sm font-medium truncate"
+                        style={{ color: COLORS.textPrimary }}
                       >
-                        {t("dashboard.sold", { count: p.quantity })}
+                        {p.name}
+                      </span>
+                      <span
+                        className="text-[10px]"
+                        style={{ color: COLORS.textSecondary }}
+                      >
+                        {p.sku}
                       </span>
                     </div>
-                  ))}
-                </div>
+                    <span
+                      className="text-xs font-semibold px-2 py-1 rounded shrink-0 ml-2"
+                      style={{
+                        backgroundColor: "var(--c-primary-18)",
+                        color: "var(--c-primary)",
+                      }}
+                    >
+                      {t("dashboard.sold", { count: p.quantity })}
+                    </span>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-          {/* Tech: empty state */}
-          {!isAdmin &&
-            (!metrics?.top_sold_products ||
-              metrics.top_sold_products.length === 0) && (
-              <div
-                className="rounded-xl py-12 text-center flex flex-col items-center gap-3"
-                style={{
-                  backgroundColor: COLORS.surface,
-                  border: `1px solid ${COLORS.border}`,
-                }}
-              >
-                <MaterialIcon
-                  icon="history"
-                  wght={300}
-                  size={40}
-                  style={{ color: "var(--c-border)" }}
-                />
-                <span
-                  className="text-xs"
-                  style={{ color: COLORS.textSecondary }}
-                >
-                  {t("dashboard.noSaleItems")}
-                </span>
-              </div>
-            )}
-        </section>
+        {/* Tech: empty state */}
+        {!isAdmin &&
+          (!metrics?.top_sold_products ||
+            metrics.top_sold_products.length === 0) && (
+            <div
+              className="rounded-xl py-12 text-center flex flex-col items-center gap-3"
+              style={{
+                backgroundColor: COLORS.surface,
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <MaterialIcon
+                icon="history"
+                wght={300}
+                size={40}
+                style={{ color: "var(--c-border)" }}
+              />
+              <span className="text-xs" style={{ color: COLORS.textSecondary }}>
+                {t("dashboard.noSaleItems")}
+              </span>
+            </div>
+          )}
+      </section>
     </div>
   );
 }
