@@ -189,9 +189,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signup: async (username: string, email: string, password: string, confirmPassword: string) => {
     set({ loading: true, error: null, isPendingApproval: false, userStatus: null, rejectionReason: null });
     try {
-      const data = await apiPost('/auth/signup', { username, email, password, confirm_password: confirmPassword });
-      set({ loading: false });
-      return data;
+      await apiPost('/auth/signup', { username, email, password, confirm_password: confirmPassword });
+
+      // Auto-login so the user goes straight to the pending approval screen
+      const loginData = await apiPost('/auth/login', { email, password });
+      get().setToken(loginData.access_token);
+      set({ loading: false, isPendingApproval: true, userStatus: 'PENDING' });
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }

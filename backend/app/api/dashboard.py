@@ -1,19 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import func, and_
-from sqlalchemy.orm import selectinload
-from app.db.session import get_db, _Session
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
+
 from app.core.auth import get_current_user, require_role
-from app.models.models import Employee, Sale, SaleItem, WorkOrder, Product, WeeklySnapshot
-from app.schemas.schemas import (
-    DashboardMetrics, WeeklySnapshotInDB, ReportPeriodOut, PeriodicReportOut,
-    WeeklyDetailReport, WeeklySaleDetail, WeeklyRepairDetail,
+from app.db.session import _Session, get_db
+from app.models.models import (
+    Employee,
+    Product,
+    Sale,
+    SaleItem,
+    WeeklySnapshot,
+    WorkOrder,
 )
 from app.reports.html_reporter import generate_weekly_html
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional
+from app.schemas.schemas import (
+    DashboardMetrics,
+    PeriodicReportOut,
+    ReportPeriodOut,
+    WeeklyDetailReport,
+    WeeklyRepairDetail,
+    WeeklySaleDetail,
+    WeeklySnapshotInDB,
+)
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import HTMLResponse
+from sqlalchemy import and_, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 # Bolivia timezone (UTC-4, no DST)
 BOLIVIA_TZ = timezone(timedelta(hours=-4))
@@ -30,10 +43,12 @@ def _today_start_utc() -> datetime:
     bolivia_midnight = bolivia_now.replace(hour=0, minute=0, second=0, microsecond=0)
     return bolivia_midnight.astimezone(timezone.utc)
 
+
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
 # ─── Shared helpers ───────────────────────────────────────────────
+
 
 async def _generate_snapshots(
     db: AsyncSession,
@@ -64,9 +79,7 @@ async def _generate_snapshots(
         emp_items_res = await db.execute(
             select(func.sum(SaleItem.quantity))
             .join(Sale, SaleItem.sale_id == Sale.id)
-            .filter(
-                and_(Sale.seller_id == emp.id, Sale.created_at >= period_start)
-            )
+            .filter(and_(Sale.seller_id == emp.id, Sale.created_at >= period_start))
         )
         emp_items = emp_items_res.scalar() or 0
 
@@ -126,9 +139,12 @@ def _get_week_start(dt: datetime) -> datetime:
 
 # ─── Endpoints ────────────────────────────────────────────────────
 
+
 @router.get("/", response_model=DashboardMetrics)
 async def get_dashboard_metrics(
-    technician_id: Optional[int] = Query(None, description="Admin: filter by technician employee ID"),
+    technician_id: Optional[int] = Query(
+        None, description="Admin: filter by technician employee ID"
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: Employee = Depends(get_current_user),
 ):
@@ -147,9 +163,14 @@ async def get_dashboard_metrics(
 
     if current_user.role == "TECH_COM":
         return DashboardMetrics(
-            sales_today=0, sales_items_count=0, repairs_today=0,
-            repairs_revenue_today=0, revenue_today=0,
-            low_stock_products_count=0, top_sold_products=[], employee_activity=[],
+            sales_today=0,
+            sales_items_count=0,
+            repairs_today=0,
+            repairs_revenue_today=0,
+            revenue_today=0,
+            low_stock_products_count=0,
+            top_sold_products=[],
+            employee_activity=[],
         )
 
     # 1. Sales today
@@ -227,7 +248,11 @@ async def get_dashboard_metrics(
     last_definitive = last_def_res.scalar()
     # Use Bolivia time to determine the start of the current week
     bolivia_now = _now_bolivia()
-    week_start = last_definitive if last_definitive else _get_week_start(bolivia_now).astimezone(timezone.utc)
+    week_start = (
+        last_definitive
+        if last_definitive
+        else _get_week_start(bolivia_now).astimezone(timezone.utc)
+    )
     last_report_str = last_definitive.isoformat() if last_definitive else None
 
     sales_week_query = select(func.sum(Sale.total)).filter(
@@ -271,13 +296,15 @@ async def get_dashboard_metrics(
         )
         emp_repairs_rev = emp_repairs_rev_res.scalar() or 0.0
 
-        employee_activity.append({
-            "employee_id": emp.id,
-            "name": emp.name,
-            "role": emp.role,
-            "sales_total": emp_sales,
-            "repairs_revenue": emp_repairs_rev,
-        })
+        employee_activity.append(
+            {
+                "employee_id": emp.id,
+                "name": emp.name,
+                "role": emp.role,
+                "sales_total": emp_sales,
+                "repairs_revenue": emp_repairs_rev,
+            }
+        )
 
     return DashboardMetrics(
         sales_today=sales_today,
@@ -378,8 +405,16 @@ async def get_report(
     is_definitive = snapshots[0].is_definitive or False
     total_sales = sum(s.total_sales for s in snapshots)
     total_repairs = sum(s.completed_repairs for s in snapshots)
-    period_start = snapshots[0].snapshot_week.split("--")[0] if "--" in snapshots[0].snapshot_week else snapshots[0].snapshot_week
-    period_end = snapshots[0].snapshot_week.split("--")[1] if "--" in snapshots[0].snapshot_week else snapshots[0].snapshot_week
+    period_start = (
+        snapshots[0].snapshot_week.split("--")[0]
+        if "--" in snapshots[0].snapshot_week
+        else snapshots[0].snapshot_week
+    )
+    period_end = (
+        snapshots[0].snapshot_week.split("--")[1]
+        if "--" in snapshots[0].snapshot_week
+        else snapshots[0].snapshot_week
+    )
 
     return PeriodicReportOut(
         period_start=period_start,
@@ -407,17 +442,27 @@ async def list_snapshots(
 
 # ─── Weekly Detail Report ─────────────────────────────────────────
 
+
 async def _parse_period(period: str) -> tuple[datetime, datetime]:
     """Parse period label 'YYYY-MM-DD--YYYY-MM-DD' into UTC datetime boundaries."""
     parts = period.split("--")
     if len(parts) != 2:
-        raise HTTPException(status_code=400, detail="Invalid period format, expected YYYY-MM-DD--YYYY-MM-DD")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid period format, expected YYYY-MM-DD--YYYY-MM-DD",
+        )
     try:
-        start_date = datetime.strptime(parts[0], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        end_date = datetime.strptime(parts[1], "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        start_date = datetime.strptime(parts[0], "%Y-%m-%d").replace(
+            tzinfo=timezone.utc
+        )
+        end_date = datetime.strptime(parts[1], "%Y-%m-%d").replace(
+            hour=23, minute=59, second=59, tzinfo=timezone.utc
+        )
         return start_date, end_date
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format in period label")
+        raise HTTPException(
+            status_code=400, detail="Invalid date format in period label"
+        )
 
 
 @router.get("/weekly-report/detail", response_model=WeeklyDetailReport)

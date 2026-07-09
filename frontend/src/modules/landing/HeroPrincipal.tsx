@@ -55,13 +55,13 @@ export function HeroPrincipal({ onExplore }: Props) {
           {/* H1 - Balanced title with gradient text using dashboard variables */}
           <motion.h1
             {...fadeUp(0.12)}
-            className="text-5xl sm:text-6xl md:text-7xl xl:text-8xl font-black tracking-[-0.04em] leading-[0.82] select-none text-left"
+            className="text-5xl sm:text-6xl md:text-7xl xl:text-8xl font-black tracking-[-0.04em] leading-[0.95] sm:leading-[0.88] select-none text-center lg:text-left px-4 sm:px-6 lg:px-0"
             style={{
               fontFamily: '"Space Grotesk", sans-serif',
               color: "var(--c-text)",
             }}
           >
-            <span className="block">REPARACIÓN</span>
+            <span className="block">REPARACIONES</span>
             <span
               className="block"
               style={{
@@ -72,7 +72,7 @@ export function HeroPrincipal({ onExplore }: Props) {
                 backgroundClip: "text",
               }}
             >
-              SIN
+              Y REPUESTOS
             </span>
             <span
               className="block"
@@ -84,14 +84,14 @@ export function HeroPrincipal({ onExplore }: Props) {
                 backgroundClip: "text",
               }}
             >
-              LIMITES
+              GARANTIZADOS
             </span>
           </motion.h1>
 
           {/* Subtitle/Description - Max 60-70 characters per line */}
           <motion.p
             {...fadeUp(0.24)}
-            className="text-base sm:text-lg mt-12 max-w-[520px] leading-relaxed font-light text-left"
+            className="text-base sm:text-lg mt-12 max-w-[520px] leading-relaxed font-light text-center lg:text-left mx-auto lg:mx-0 px-4 sm:px-6 lg:px-0"
             style={{
               color: "var(--c-text-sec)",
               fontFamily: '"Space Grotesk", sans-serif',
@@ -104,7 +104,7 @@ export function HeroPrincipal({ onExplore }: Props) {
           {/* CTA Buttons - Using dashboard theme variables with glows */}
           <motion.div
             {...fadeUp(0.36)}
-            className="flex flex-wrap items-center gap-4 mt-12"
+            className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mt-12"
           >
             {/* Primary Button */}
             <button

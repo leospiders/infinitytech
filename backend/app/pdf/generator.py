@@ -482,12 +482,12 @@ def _watermark(canvas, doc):
     try:
         img = ImageReader(LOGO_PATH)
         iw, ih = img.getSize()
-        scale = min(PAGE_W / iw, PAGE_H / ih) * 1.26
+        scale = min(PAGE_W / iw, PAGE_H / ih) * 1.10
         dw = iw * scale
         dh = ih * scale
 
         canvas.saveState()
-        canvas.setFillAlpha(0.30)
+        canvas.setFillAlpha(0.40)
         canvas.drawImage(
             img,
             (PAGE_W - dw) / 2,
@@ -495,7 +495,6 @@ def _watermark(canvas, doc):
             dw,
             dh,
             preserveAspectRatio=True,
-            mask="auto",
         )
         canvas.restoreState()
     except Exception:
@@ -514,7 +513,7 @@ def _draw_header_block(canvas, doc):
         try:
             img = ImageReader(LOGO_PATH)
             iw, ih = img.getSize()
-            width = 24
+            width = 26.4
             height = width * (ih / iw)
             canvas.drawImage(
                 img,
@@ -523,7 +522,6 @@ def _draw_header_block(canvas, doc):
                 width,
                 height,
                 preserveAspectRatio=True,
-                mask="auto",
             )
         except Exception:
             pass

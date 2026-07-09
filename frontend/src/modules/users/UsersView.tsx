@@ -592,7 +592,7 @@ export function UsersView({ showToast }: { showToast: (type: 'success' | 'error'
 
                       {/* Actions — hover */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        <div className="flex items-center justify-end gap-1 opacity-60 hover:opacity-100 transition-opacity duration-150">
                           {(emp.role === 'PENDING' || (emp as any).uuid) && canManage && !emp.is_active && (emp as any).status !== 'REJECTED' && (emp as any).status !== 'SUSPENDED' && (emp as any).status !== 'DELETED' && (
                             <>
                               <button

@@ -81,8 +81,7 @@ async def signup(req: SignUpRequest, db: AsyncSession = Depends(get_db)):
     """Register a new user with email + password and create a pending profile.
 
     Creates the user in Supabase Auth AND creates a pending Employee record
-    in SQLite so the admin can see and approve the registration immediately —
-    without waiting for the user to confirm their email or log in.
+    in SQLite so the admin can see and approve the registration immediately.
     """
     supabase_body = {
         "email": req.email,
@@ -117,6 +116,7 @@ async def signup(req: SignUpRequest, db: AsyncSession = Depends(get_db)):
         return {
             "message": "Registration submitted. An administrator will activate your account shortly.",
             "email": req.email,
+            "user_id": user_id,
         }
 
     msg = (

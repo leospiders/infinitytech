@@ -443,7 +443,6 @@ export function RepairsView({ showToast: _showToast, createTrigger, onConsumeTri
                 <div className="flex items-center justify-end gap-1">
                   <ActionIcon icon="print" onClick={() => handlePrint(rep.id)} tooltip={t('repairs.print')} />
                   <ActionIcon icon="chat" onClick={() => api.sharePdfOnWhatsApp('work-order', rep.id, `Work Order #${rep.id}`)} tooltip="WhatsApp" />
-                  <ActionIcon icon="visibility" onClick={() => {}} tooltip="Ver detalle" />
                   <ActionIcon icon="swap_horiz" onClick={() => { setSelectedRepair(rep); setTransferTechId(rep.assigned_technician_id || undefined); setShowTransfer(true); }} color="var(--c-primary)" tooltip={t('repairs.transfer')} />
                 </div>
               </div>

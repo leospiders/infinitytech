@@ -26,7 +26,7 @@ export function LoginModal({ onClose }: Props) {
   const [resetEmail, setResetEmail] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const inputClass = "w-full px-3.5 py-2.5 text-sm bg-surface-container border border-outline-variant rounded-[4px] focus:outline-none focus:border-accent-cyan focus:ring-0 text-on-surface placeholder:text-on-surface-variant/40 transition-all font-sans";
+  const inputClass = "w-full px-3.5 py-2.5 text-sm bg-white/[0.04] border border-white/10 rounded-lg focus:outline-none focus:border-accent-cyan focus:ring-0 text-on-surface placeholder:text-on-surface-variant/40 transition-all font-sans backdrop-blur-lg";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,11 +41,7 @@ export function LoginModal({ onClose }: Props) {
       useAuthStore.setState({ error: 'Passwords do not match.' });
       return;
     }
-    const result = await signup(signupUsername, signupEmail, signupPassword, signupConfirm);
-    if (result) {
-      setSuccessMsg(t('app.signupSuccess'));
-      setAuthMode('login');
-    }
+    await signup(signupUsername, signupEmail, signupPassword, signupConfirm);
   };
 
   const handleReset = async (e: React.FormEvent) => {
@@ -69,13 +65,13 @@ export function LoginModal({ onClose }: Props) {
       <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
 
       {/* Modal */}
-      <div className="max-w-md w-full p-8 flex flex-col items-center gap-6 relative z-10 rounded-[4px] bg-surface-container-low border border-outline-variant max-h-[90vh] overflow-y-auto">
+      <div className="max-w-md w-full p-8 flex flex-col items-center gap-6 relative z-10 rounded-xl bg-white/[0.04] border border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl max-h-[90vh] overflow-y-auto">
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-accent-cyan" />
 
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 neo-btn p-2 rounded-[4px] cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.04] border border-white/10 backdrop-blur-lg text-on-surface-variant hover:text-on-surface hover:bg-white/[0.08] hover:border-accent-cyan/30 transition-all duration-150 cursor-pointer"
         >
           <MaterialIcon icon="close" wght={300} className="text-on-surface-variant" size={16} />
         </button>
@@ -87,6 +83,19 @@ export function LoginModal({ onClose }: Props) {
           </div>
           <h1 className="text-xl font-bold tracking-tight text-on-surface uppercase mt-2 font-display-md">{t('app.title')}</h1>
           <p className="text-xs text-on-surface-variant font-sans">{t('app.subtitle')}</p>
+        </div>
+
+        {/* Warning — acceso solo para técnicos */}
+        <div
+          className="w-full p-3 rounded-[2px] text-xs flex gap-2.5 items-start"
+          style={{
+            backgroundColor: "rgba(255, 204, 0, 0.08)",
+            border: "1px solid rgba(255, 204, 0, 0.15)",
+            color: "#FFD700",
+          }}
+        >
+          <MaterialIcon icon="warning_amber" wght={400} className="shrink-0 mt-[1px]" size={14} />
+          <span className="leading-relaxed font-medium">Acceso exclusivo para técnicos y personal autorizado</span>
         </div>
 
         {/* Error */}
@@ -155,7 +164,14 @@ export function LoginModal({ onClose }: Props) {
             <button
               type="submit"
               disabled={loading}
-              className="neo-btn btn-primary w-full py-3 text-sm font-bold disabled:opacity-50 cursor-pointer"
+              className="w-full py-3 text-sm font-bold rounded-lg disabled:opacity-50 cursor-pointer transition-all duration-150 uppercase tracking-wider"
+              style={{
+                background: "rgba(0, 200, 248, 0.12)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(0, 200, 248, 0.2)",
+                color: "var(--color-cyan-accent)",
+              }}
             >
               {loading ? t('app.loading') : t('app.loginButton')}
             </button>
@@ -220,7 +236,14 @@ export function LoginModal({ onClose }: Props) {
             <button
               type="submit"
               disabled={loading}
-              className="neo-btn btn-primary w-full py-3 text-sm font-bold disabled:opacity-50 cursor-pointer"
+              className="w-full py-3 text-sm font-bold rounded-lg disabled:opacity-50 cursor-pointer transition-all duration-150 uppercase tracking-wider"
+              style={{
+                background: "rgba(0, 200, 248, 0.12)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(0, 200, 248, 0.2)",
+                color: "var(--color-cyan-accent)",
+              }}
             >
               {loading ? t('app.loading') : t('app.signupButton')}
             </button>
@@ -246,7 +269,14 @@ export function LoginModal({ onClose }: Props) {
             <button
               type="submit"
               disabled={loading}
-              className="neo-btn btn-primary w-full py-3 text-sm font-bold disabled:opacity-50 cursor-pointer"
+              className="w-full py-3 text-sm font-bold rounded-lg disabled:opacity-50 cursor-pointer transition-all duration-150 uppercase tracking-wider"
+              style={{
+                background: "rgba(0, 200, 248, 0.12)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(0, 200, 248, 0.2)",
+                color: "var(--color-cyan-accent)",
+              }}
             >
               {loading ? t('app.loading') : t('app.resetPasswordButton')}
             </button>
@@ -270,7 +300,14 @@ export function LoginModal({ onClose }: Props) {
         {/* Google OAuth */}
         <button
           onClick={loginWithGoogle}
-          className="neo-btn w-full py-3 text-sm font-semibold flex items-center justify-center gap-2 rounded-[4px] cursor-pointer"
+          className="w-full py-3 text-sm font-semibold flex items-center justify-center gap-2 rounded-lg cursor-pointer transition-all duration-150"
+          style={{
+            background: "rgba(255, 255, 255, 0.04)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            color: "var(--c-text)",
+          }}
         >
           <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />

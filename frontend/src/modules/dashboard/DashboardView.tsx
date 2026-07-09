@@ -402,9 +402,25 @@ export function DashboardView() {
             {t("dashboard.reportViewer", "Actividad Reciente")}
           </h3>
 
-          {isAdmin && latestPeriod && (
+          {isAdmin && (
             <button
-              onClick={() => downloadWeeklyReportHtml(latestPeriod)}
+              onClick={() => {
+                const end = new Date().toISOString().split("T")[0];
+                // Use dynamic period: from last report date to today
+                if (metrics?.last_report_date) {
+                  const start = metrics.last_report_date.split("T")[0];
+                  downloadWeeklyReportHtml(`${start}--${end}`);
+                } else if (latestPeriod) {
+                  const start = latestPeriod.split("--")[0];
+                  downloadWeeklyReportHtml(`${start}--${end}`);
+                } else {
+                  // Fallback: last 7 days
+                  const start = new Date(Date.now() - 7 * 86400000)
+                    .toISOString()
+                    .split("T")[0];
+                  downloadWeeklyReportHtml(`${start}--${end}`);
+                }
+              }}
               className="flex items-center justify-center rounded-lg w-7 h-7 transition-all duration-150 hover:scale-[1.02] cursor-pointer"
               style={{
                 border: `1px solid ${COLORS.border}`,

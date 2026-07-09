@@ -150,6 +150,25 @@ export function LandingView({ onRequestLogin }: Props) {
               )}
             </button>
 
+            {/* Login Button */}
+            <button
+              onClick={onRequestLogin}
+              className="relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300 cursor-pointer group"
+              style={{ color: "var(--c-text-sec)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor =
+                  "rgba(255, 255, 255, 0.04)";
+                e.currentTarget.style.color = "var(--color-cyan-accent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--c-text-sec)";
+              }}
+              aria-label="Iniciar sesión"
+            >
+              <MaterialIcon icon="login" size={16} wght={300} />
+            </button>
+
             {/* Mobile Hamburger menu */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
