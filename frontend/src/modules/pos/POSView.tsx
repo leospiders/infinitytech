@@ -7,7 +7,23 @@ import { MaterialIcon } from '../../components/ui/MaterialIcon';
 import { useTranslation } from 'react-i18next';
 import type { Product, Sale } from '../../types';
 
-
+function handleEnterNavigation(e: React.KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const target = e.target as HTMLElement;
+    if (target.tagName !== 'INPUT' && target.tagName !== 'SELECT' && target.tagName !== 'TEXTAREA') return;
+    const form = (target as HTMLInputElement).form || (e.currentTarget as HTMLElement).querySelector('form') || e.currentTarget;
+    const fields = Array.from(
+      (form as HTMLElement).querySelectorAll<HTMLElement>(
+        'input:not([type="submit"]):not([type="button"]):not([type="radio"]):not([type="checkbox"]):not([type="hidden"]), select, textarea'
+      )
+    ).filter(el => !(el as any).disabled && el.tabIndex !== -1);
+    const idx = fields.indexOf(target);
+    if (idx >= 0 && idx < fields.length - 1) {
+      e.preventDefault();
+      fields[idx + 1].focus();
+    }
+  }
+}
 
 export function POSView({ showToast }: { showToast?: (type: 'success' | 'error', msg: string) => void }) {
   const { items, discount, paymentMethod, customerName, customerPhone, warrantyInfo,
@@ -50,7 +66,7 @@ export function POSView({ showToast }: { showToast?: (type: 'success' | 'error',
         customer_phone: customSaleInfo.customerPhone || null,
         discount: 0,
         payment_method: customSaleInfo.paymentMethod,
-        warranty_info: customSaleInfo.warrantyDays > 0 ? `${customSaleInfo.warrantyDays} days warranty` : '',
+        warranty_info: customSaleInfo.warrantyDays > 0 ? `${customSaleInfo.warrantyDays} días de garantía` : '',
         items: [{ product_id: null, custom_name: customForm.name, quantity: 1, unit_price: customForm.price }],
       });
       setLastSale(sale);
@@ -247,7 +263,7 @@ export function POSView({ showToast }: { showToast?: (type: 'success' | 'error',
             </div>
 
             {/* Contenido scrolleable */}
-            <div className="flex-1 overflow-y-auto p-5 pt-4 flex flex-col gap-4 text-xs">
+            <form onSubmit={e => e.preventDefault()} onKeyDown={handleEnterNavigation} className="flex-1 overflow-y-auto p-5 pt-4 flex flex-col gap-4 text-xs">
               {/* Cliente */}
               <div className="flex flex-col gap-3">
                 <span className="font-bold text-[11px] uppercase tracking-widest text-on-surface-variant">{t('pos.customerInfo')}</span>
@@ -280,7 +296,7 @@ export function POSView({ showToast }: { showToast?: (type: 'success' | 'error',
                   <div className="flex flex-col gap-1">
                     <label className="font-semibold text-[11px]">{t('pos.warranty')}</label>
                     <input type="number" min="0" value={warrantyInfo ? parseInt(warrantyInfo) : ''}
-                      onChange={e => setWarrantyInfo(e.target.value ? `${e.target.value} days warranty` : '')}
+                      onChange={e => setWarrantyInfo(e.target.value ? `${e.target.value} días de garantía` : '')}
                       className="neo-input w-full" placeholder={t('pos.none')} />
                   </div>
                 </div>
@@ -312,7 +328,7 @@ export function POSView({ showToast }: { showToast?: (type: 'success' | 'error',
                   <MaterialIcon icon="share" size={14} wght={300} /> {t('pos.whatsapp')}
                 </a>
               )}
-            </div>
+            </form>
 
             {/* Botones fijos al final */}
             <div className="flex gap-3 p-5 pt-0 shrink-0">
@@ -334,7 +350,7 @@ export function POSView({ showToast }: { showToast?: (type: 'success' | 'error',
           <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg max-w-md w-full p-6 relative">
             <button onClick={() => setShowCustomModal(false)} className="absolute top-4 right-4 neo-btn h-8 w-8 rounded-full"><MaterialIcon icon="close" size={16} wght={300} /></button>
             <h3 className="font-extrabold text-base border-b pb-2 border-outline-variant/10 mb-4">{t('pos.customSale')}</h3>
-            <form onSubmit={(e) => { e.preventDefault(); handleCustomCheckout(); }} className="flex flex-col gap-4 text-xs">
+            <form onSubmit={(e) => { e.preventDefault(); handleCustomCheckout(); }} onKeyDown={handleEnterNavigation} className="flex flex-col gap-4 text-xs">
               <div className="grid grid-cols-2 gap-3 pb-3 border-b dark:border-outline-variant/10">
                 <div>
                   <label className="font-semibold">{t('pos.itemName')}</label>

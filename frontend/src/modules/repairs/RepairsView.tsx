@@ -10,6 +10,24 @@ import { PatternLock } from '../../components/PatternLock';
 import { StatusSegmentedControl } from '../../components/StatusSegmentedControl';
 import type { WorkOrder, WorkOrderStatus } from '../../types';
 
+function handleEnterNavigation(e: React.KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const target = e.target as HTMLElement;
+    if (target.tagName !== 'INPUT' && target.tagName !== 'SELECT' && target.tagName !== 'TEXTAREA') return;
+    const form = (target as HTMLInputElement).form || (e.currentTarget as HTMLElement).querySelector('form') || e.currentTarget;
+    const fields = Array.from(
+      (form as HTMLElement).querySelectorAll<HTMLElement>(
+        'input:not([type="submit"]):not([type="button"]):not([type="radio"]):not([type="checkbox"]):not([type="hidden"]), select, textarea'
+      )
+    ).filter(el => !(el as any).disabled && el.tabIndex !== -1);
+    const idx = fields.indexOf(target);
+    if (idx >= 0 && idx < fields.length - 1) {
+      e.preventDefault();
+      fields[idx + 1].focus();
+    }
+  }
+}
+
 /* ─── Color palette — via CSS vars (light/dark aware) ── */
 const C = {
   bg: 'var(--c-bg)',
@@ -467,7 +485,7 @@ export function RepairsView({ showToast: _showToast, createTrigger, onConsumeTri
               <MaterialIcon icon="close" size={14} wght={300} />
             </button>
             <h3 className="font-extrabold text-sm pb-2 mb-3 shrink-0" style={{ color: C.text, borderBottom: `1px solid ${C.divider}` }}>{t('repairs.receiveOrder')}</h3>
-            <form onSubmit={handleCreate} className="grid grid-cols-2 gap-3 text-xs overflow-y-auto pr-1">
+            <form onSubmit={handleCreate} onKeyDown={handleEnterNavigation} className="grid grid-cols-2 gap-3 text-xs overflow-y-auto pr-1">
               <div className="col-span-2 md:col-span-1">
                 <label className="font-semibold" style={{ color: C.text }}>{t('repairs.customerName')}</label>
                 <input required value={form.customer_name} onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}

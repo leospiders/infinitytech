@@ -684,6 +684,8 @@ def generate_pdf_receipt(
     payment_method: str,
     seller_name: str,
     warranty_info: str = "",
+    seller_phone: str = "",
+    customer_phone: str = "",
 ) -> Optional[BytesIO]:
     buf = BytesIO()
 
@@ -705,6 +707,12 @@ def generate_pdf_receipt(
                 _info_card("VENDEDOR", seller_name or "System"),
                 _info_card(
                     "CLIENTE", customer_name or "Cliente General", align=TA_RIGHT
+                ),
+            ],
+            [
+                _info_card("TEL. VENDEDOR", seller_phone or "—"),
+                _info_card(
+                    "TEL. CLIENTE", customer_phone or "—", align=TA_RIGHT
                 ),
             ],
         ]

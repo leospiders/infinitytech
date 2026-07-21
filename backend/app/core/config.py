@@ -16,6 +16,8 @@ class Settings:
 
     CORS_ORIGINS: list[str] = json.loads(os.getenv("CORS_ORIGINS", '["http://localhost:5173","http://127.0.0.1:5173","http://localhost:3000"]'))
 
+    BACKEND_PUBLIC_URL: str = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
+
     # Secret for generating short-lived share links (auto-generated fallback)
     SHARE_SECRET: str = os.getenv("SHARE_SECRET", "insecure-dev-share-secret-change-in-prod")
 

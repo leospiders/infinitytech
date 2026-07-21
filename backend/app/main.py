@@ -120,6 +120,19 @@ async def serve_shared_pdf(token: str, db: AsyncSession = Depends(get_db)):
         if not sale:
             raise HTTPException(status_code=404, detail="Receipt not found")
 
+        import os
+        if sale.pdf_path and os.path.exists(sale.pdf_path):
+            try:
+                with open(sale.pdf_path, "rb") as f:
+                    content = f.read()
+                return Response(
+                    content=content,
+                    media_type="application/pdf",
+                    headers={"Content-Disposition": f"inline; filename=sale_{sale.id}.pdf"}
+                )
+            except Exception as e:
+                logger.error("Failed to serve cached PDF in share link: %s", e)
+
         items_list = [{
             "name": item.custom_name or (item.product.name if item.product else "Unknown"),
             "quantity": item.quantity,
@@ -134,14 +147,31 @@ async def serve_shared_pdf(token: str, db: AsyncSession = Depends(get_db)):
             total=sale.total,
             payment_method=sale.payment_method,
             seller_name=sale.seller.name if sale.seller else "System",
-            warranty_info=sale.warranty_info
+            warranty_info=sale.warranty_info,
+            seller_phone=sale.seller.phone if (sale.seller and sale.seller.phone) else "",
+            customer_phone=sale.customer_phone or ""
         )
         if not pdf_buf:
             raise HTTPException(status_code=500, detail="Could not generate receipt PDF")
+        
+        # Self-healing cache: write it to disk
+        try:
+            pdf_dir = os.path.join("static", "pdf")
+            os.makedirs(pdf_dir, exist_ok=True)
+            pdf_filename = f"sale_{sale.id}_{sale.uuid[:8]}.pdf"
+            pdf_path = os.path.join(pdf_dir, pdf_filename)
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_buf.getvalue())
+            sale.pdf_path = pdf_path
+            db.add(sale)
+            await db.commit()
+        except Exception as e:
+            logger.error("Failed to self-heal PDF cache in share link: %s", e)
+
         return Response(
             content=pdf_buf.getvalue(),
             media_type="application/pdf",
-            headers={"Content-Disposition": f"inline; filename=sale_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pdf"}
+            headers={"Content-Disposition": f"inline; filename=sale_{sale.id}.pdf"}
         )
 
     if resource_type == "work_order":

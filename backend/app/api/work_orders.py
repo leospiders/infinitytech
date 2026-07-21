@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 from app.db.session import get_db
 from app.core.auth import get_current_user, require_role
@@ -200,9 +200,9 @@ async def share_work_order_pdf(
         {
             "type": "work_order",
             "id": work_order_id,
-            "exp": datetime.utcnow() + timedelta(hours=1),
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
         },
         settings.SHARE_SECRET,
         algorithm="HS256",
     )
-    return {"url": f"/_share/pdf/{share_token}", "expires_in": 3600}
+    return {"url": f"{settings.BACKEND_PUBLIC_URL.rstrip('/')}/_share/pdf/{share_token}", "expires_in": 3600}

@@ -1,8 +1,9 @@
 import logging
-from datetime import datetime, timedelta
+import os
+from datetime import datetime, timedelta, timezone
 import jwt
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from fastapi.responses import Response
 
 logger = logging.getLogger("infinity")
@@ -60,9 +61,64 @@ async def get_sale(
         raise HTTPException(status_code=404, detail="Sale not found")
     return sale
 
+async def generate_and_save_sale_pdf(sale_id: int):
+    from app.db.session import _Session
+    from app.repositories.base_repos import SaleRepository
+    from app.pdf.generator import generate_pdf_receipt
+
+    session_factory = _Session()
+    async with session_factory() as db:
+        repo = SaleRepository(db)
+        sale = await repo.get_by_id(sale_id)
+        if not sale:
+            logger.error("Background task: Sale %d not found", sale_id)
+            return
+
+        if sale.pdf_path and os.path.exists(sale.pdf_path):
+            return
+
+        items_list = [{
+            "name": item.custom_name or (item.product.name if item.product else "Unknown"),
+            "quantity": item.quantity,
+            "price": item.unit_price,
+            "subtotal": item.subtotal
+        } for item in sale.items]
+
+        pdf_buf = generate_pdf_receipt(
+            sale_id=sale.id,
+            customer_name=sale.customer_name or "General Customer",
+            date_str=sale.created_at.strftime('%Y-%m-%d %H:%M'),
+            items=items_list,
+            total=sale.total,
+            payment_method=sale.payment_method,
+            seller_name=sale.seller.name if sale.seller else "System",
+            warranty_info=sale.warranty_info,
+            seller_phone=sale.seller.phone if (sale.seller and sale.seller.phone) else "",
+            customer_phone=sale.customer_phone or ""
+        )
+        if not pdf_buf:
+            logger.error("Background task: Failed to generate PDF for sale %d", sale_id)
+            return
+
+        pdf_dir = os.path.join("static", "pdf")
+        os.makedirs(pdf_dir, exist_ok=True)
+        pdf_filename = f"sale_{sale.id}_{sale.uuid[:8]}.pdf"
+        pdf_path = os.path.join(pdf_dir, pdf_filename)
+
+        try:
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_buf.getvalue())
+            sale.pdf_path = pdf_path
+            db.add(sale)
+            await db.commit()
+            logger.info("Background task: PDF saved for sale %d at %s", sale_id, pdf_path)
+        except Exception as e:
+            logger.exception("Background task: Failed to write PDF or update DB for sale %d: %s", sale_id, e)
+
 @router.post("/", response_model=SaleInDB, status_code=status.HTTP_201_CREATED)
 async def create_sale(
     obj_in: SaleCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: Employee = Depends(require_role(["ADMIN", "TECH_IT"]))
 ):
@@ -82,6 +138,9 @@ async def create_sale(
     # Refresh sale object with fully loaded relationships for PDF drawing
     sale = await repo.get_by_id(sale.id)
     
+    # Schedule PDF generation background task
+    background_tasks.add_task(generate_and_save_sale_pdf, sale.id)
+    
     return sale
 
 @router.get("/{sale_id}/pdf")
@@ -91,13 +150,27 @@ async def download_sale_receipt(
     current_user: Employee = Depends(get_current_user)
 ):
     """
-    Generate and serve receipt PDF on the fly (no file saved to disk).
+    Generate and serve receipt PDF (uses cache if available).
     """
     repo = SaleRepository(db)
     sale = await repo.get_by_id(sale_id)
     if not sale:
         raise HTTPException(status_code=404, detail="Sale not found")
         
+    # If cached PDF exists, serve it immediately
+    if sale.pdf_path and os.path.exists(sale.pdf_path):
+        try:
+            with open(sale.pdf_path, "rb") as f:
+                content = f.read()
+            return Response(
+                content=content,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"inline; filename=sale_{sale.id}.pdf"}
+            )
+        except Exception as e:
+            logger.error("Failed to read cached PDF for sale %d: %s", sale.id, e)
+
+    # Fallback to generating on-the-fly and writing cache (self-healing)
     items_list = [{
         "name": item.custom_name or (item.product.name if item.product else "Unknown"),
         "quantity": item.quantity,
@@ -112,18 +185,32 @@ async def download_sale_receipt(
         items=items_list,
         total=sale.total,
         payment_method=sale.payment_method,
-        seller_name=sale.seller.name,
-        warranty_info=sale.warranty_info
+        seller_name=sale.seller.name if sale.seller else "System",
+        warranty_info=sale.warranty_info,
+        seller_phone=sale.seller.phone if (sale.seller and sale.seller.phone) else "",
+        customer_phone=sale.customer_phone or ""
     )
     if not pdf_buf:
         raise HTTPException(status_code=500, detail="Could not generate receipt PDF")
     
+    try:
+        pdf_dir = os.path.join("static", "pdf")
+        os.makedirs(pdf_dir, exist_ok=True)
+        pdf_filename = f"sale_{sale.id}_{sale.uuid[:8]}.pdf"
+        pdf_path = os.path.join(pdf_dir, pdf_filename)
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_buf.getvalue())
+        sale.pdf_path = pdf_path
+        db.add(sale)
+        await db.commit()
+    except Exception as e:
+        logger.error("Failed to self-heal PDF cache for sale %d: %s", sale.id, e)
+        
     return Response(
         content=pdf_buf.getvalue(),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"inline; filename=sale_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pdf"}
+        headers={"Content-Disposition": f"inline; filename=sale_{sale.id}.pdf"}
     )
-
 
 @router.get("/{sale_id}/share-link")
 async def share_sale_receipt(
@@ -141,9 +228,9 @@ async def share_sale_receipt(
         {
             "type": "sale",
             "id": sale_id,
-            "exp": datetime.utcnow() + timedelta(hours=1),
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
         },
         settings.SHARE_SECRET,
         algorithm="HS256",
     )
-    return {"url": f"/_share/pdf/{share_token}", "expires_in": 3600}
+    return {"url": f"{settings.BACKEND_PUBLIC_URL.rstrip('/')}/_share/pdf/{share_token}", "expires_in": 3600}
